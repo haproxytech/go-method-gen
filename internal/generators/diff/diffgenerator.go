@@ -13,5 +13,7 @@ func DiffGenerator(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[str
 		DiffGeneratorStruct(node, ctx, pkgsForGeneration)
 	case data.Builtin:
 		DiffGeneratorBuiltin(node, ctx, pkgsForGeneration)
+	case data.Array:
+		DiffGeneratorArray(node, ctx, pkgsForGeneration)
 	}
 }
