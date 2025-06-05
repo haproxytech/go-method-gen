@@ -17,5 +17,7 @@ func EqualGenerator(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[st
 		EqualGeneratorArray(node, ctx, pkgsForGeneration)
 	case data.Slice:
 		EqualGeneratorSlice(node, ctx, pkgsForGeneration)
+	case data.Map:
+		EqualGeneratorMap(node, ctx, pkgsForGeneration)
 	}
 }
