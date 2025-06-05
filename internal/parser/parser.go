@@ -30,6 +30,8 @@ func TypeAlreadyVisited(typ reflect.Type, fqnTypesProcessed map[string]struct{})
 func Parse(node *data.TypeNode, typ reflect.Type, pkg string, fqnTypesProcessed map[string]struct{}) {
 	kind := typ.Kind()
 	switch kind {
+	case reflect.Array:
+		ParseArray(node, typ, pkg, fqnTypesProcessed)
 	case reflect.Slice:
 		ParseSlice(node, typ, pkg, fqnTypesProcessed)
 	case reflect.Ptr:
@@ -95,6 +97,23 @@ func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed 
 	if !node.SamePkgAsReferer && node.PkgPath != "" {
 		node.Imports[node.PkgPath] = struct{}{}
 	}
+}
+
+func ParseArray(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+	DefaultParsing(node, typ)
+	node.Kind = data.Array
+	node.Len = typ.Len()
+	arrayType := typ.Elem()
+	arrayNode := &data.TypeNode{
+		UpNode: node,
+	}
+	node.SubNode = arrayNode
+	Parse(arrayNode, arrayType, pkg, typesProcessed)
+	node.PkgPath = node.SubNode.PkgPath
+	if node.Type != "" {
+		node.PkgPath = typ.PkgPath()
+	}
+	node.Imports = node.SubNode.Imports
 }
 
 func ParseSlice(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
