@@ -21,5 +21,7 @@ func DiffGenerator(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[str
 		DiffGeneratorMap(node, ctx, pkgsForGeneration)
 	case data.Interface:
 		DiffGeneratorInterface(node, ctx, pkgsForGeneration)
+	case data.Pointer:
+		DiffGeneratorPointer(node, ctx, pkgsForGeneration)
 	}
 }
