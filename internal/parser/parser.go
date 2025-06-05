@@ -30,6 +30,8 @@ func TypeAlreadyVisited(typ reflect.Type, fqnTypesProcessed map[string]struct{})
 func Parse(node *data.TypeNode, typ reflect.Type, pkg string, fqnTypesProcessed map[string]struct{}) {
 	kind := typ.Kind()
 	switch kind {
+	case reflect.Ptr:
+		ParsePointer(node, typ, pkg, fqnTypesProcessed)
 	case reflect.Struct:
 		ParseStructure(node, typ, pkg, fqnTypesProcessed)
 	}
@@ -63,6 +65,22 @@ func ParseBuiltin(node *data.TypeNode, pkg string, typ reflect.Type) {
 	if node.PkgPath != "" {
 		node.SamePkgAsReferer = pkg == node.PkgPath
 	}
+}
+
+func ParsePointer(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+	DefaultParsing(node, typ)
+	node.Kind = data.Pointer
+	pointerType := typ.Elem()
+	pointerNode := &data.TypeNode{
+		UpNode: node,
+	}
+	node.SubNode = pointerNode
+	Parse(pointerNode, pointerType, pkg, typesProcessed)
+	if node.Type == "" {
+		node.PkgPath = node.SubNode.PkgPath
+	}
+	node.PackagedType = node.SubNode.PackagedType
+	node.Imports = node.SubNode.Imports
 }
 
 func StructFieldsEqual(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
