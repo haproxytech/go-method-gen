@@ -33,6 +33,9 @@ func Parse(node *data.TypeNode, typ reflect.Type, pkg string, fqnTypesProcessed 
 	case reflect.Struct:
 		ParseStructure(node, typ, pkg, fqnTypesProcessed)
 	}
+	if kind == reflect.String || (kind > reflect.Invalid && kind <= reflect.Complex128) {
+		ParseBuiltin(node, pkg, typ)
+	}
 }
 
 func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
@@ -50,6 +53,15 @@ func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 	}
 	if !node.HasEqual {
 		StructFieldsEqual(node, typ, pkg, typesProcessed)
+	}
+}
+
+func ParseBuiltin(node *data.TypeNode, pkg string, typ reflect.Type) {
+	DefaultParsing(node, typ)
+	node.Kind = data.Builtin
+	node.SamePkgAsReferer = true
+	if node.PkgPath != "" {
+		node.SamePkgAsReferer = pkg == node.PkgPath
 	}
 }
 
