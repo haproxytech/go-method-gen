@@ -42,6 +42,8 @@ func Parse(node *data.TypeNode, typ reflect.Type, pkg string, fqnTypesProcessed 
 		ParseMap(node, typ, pkg, fqnTypesProcessed)
 	case reflect.Interface:
 		ParseInterface(node, typ, pkg, fqnTypesProcessed)
+	case reflect.Func:
+		ParseFunc(node, typ, pkg)
 	}
 	if kind == reflect.String || (kind > reflect.Invalid && kind <= reflect.Complex128) {
 		ParseBuiltin(node, pkg, typ)
@@ -79,6 +81,11 @@ func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 	if !node.HasEqual {
 		StructFieldsEqual(node, typ, pkg, typesProcessed)
 	}
+}
+
+func ParseFunc(node *data.TypeNode, typ reflect.Type, pkg string) {
+	DefaultParsing(node, typ)
+	node.Kind = data.Func
 }
 
 func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
