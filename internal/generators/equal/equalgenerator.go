@@ -21,5 +21,7 @@ func EqualGenerator(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[st
 		EqualGeneratorMap(node, ctx, pkgsForGeneration)
 	case data.Interface:
 		EqualGeneratorInterface(node, ctx, pkgsForGeneration)
+	case data.Pointer:
+		EqualGeneratorPointer(node, ctx, pkgsForGeneration)
 	}
 }
