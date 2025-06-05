@@ -14,6 +14,7 @@ import (
 	"github.com/haproxytech/eqdiff/internal/generators/equal"
 	"github.com/haproxytech/eqdiff/internal/parser"
 	"github.com/haproxytech/eqdiff/internal/writer"
+	imp "golang.org/x/tools/imports"
 )
 
 type Options struct {
@@ -161,7 +162,7 @@ func Generate(types []reflect.Type, opts Options) error {
 					sb.WriteString(fun + "\n")
 				}
 				if hasFunc {
-					formattedCode, errFormat := format.Source(sb.Bytes())
+					formattedCode, errFormat := imp.Process("", sb.Bytes(), nil)
 					if errFormat != nil {
 						fmt.Printf("file: %s, err: %s\n", file, errFormat.Error())
 						fmt.Println(string(sb.Bytes()))
