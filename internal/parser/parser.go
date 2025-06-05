@@ -36,6 +36,8 @@ func Parse(node *data.TypeNode, typ reflect.Type, pkg string, fqnTypesProcessed 
 		ParsePointer(node, typ, pkg, fqnTypesProcessed)
 	case reflect.Struct:
 		ParseStructure(node, typ, pkg, fqnTypesProcessed)
+	case reflect.Map:
+		ParseMap(node, typ, pkg, fqnTypesProcessed)
 	}
 	if kind == reflect.String || (kind > reflect.Invalid && kind <= reflect.Complex128) {
 		ParseBuiltin(node, pkg, typ)
@@ -66,6 +68,32 @@ func ParseBuiltin(node *data.TypeNode, pkg string, typ reflect.Type) {
 	node.SamePkgAsReferer = true
 	if node.PkgPath != "" {
 		node.SamePkgAsReferer = pkg == node.PkgPath
+	}
+}
+
+func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+	DefaultParsing(node, typ)
+	node.Kind = data.Map
+	node.MapKeyType = typ.Key().Name()
+	mapType := typ.Elem()
+	mapNode := &data.TypeNode{
+		UpNode: node,
+	}
+	node.SubNode = mapNode
+	Parse(mapNode, mapType, pkg, typesProcessed)
+	node.PkgPath = typ.Key().PkgPath()
+	if node.Type != "" {
+		node.PkgPath = typ.PkgPath()
+	}
+	node.PackagedType = typ.Key().String()
+	node.SamePkgAsReferer = pkg == node.PkgPath
+	// Particular case because we need import from node (key) and subnode(value)
+	node.Imports = map[string]struct{}{}
+	for subNodeImport := range node.SubNode.Imports {
+		node.Imports[subNodeImport] = struct{}{}
+	}
+	if !node.SamePkgAsReferer && node.PkgPath != "" {
+		node.Imports[node.PkgPath] = struct{}{}
 	}
 }
 
