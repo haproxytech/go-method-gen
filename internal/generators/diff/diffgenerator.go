@@ -11,5 +11,7 @@ func DiffGenerator(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[str
 	switch node.Kind {
 	case data.Struct:
 		DiffGeneratorStruct(node, ctx, pkgsForGeneration)
+	case data.Builtin:
+		DiffGeneratorBuiltin(node, ctx, pkgsForGeneration)
 	}
 }
