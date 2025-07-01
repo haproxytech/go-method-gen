@@ -62,6 +62,7 @@ type TypeNode struct {
 	MapKeyType       string
 	SubNode          *TypeNode
 	UpNode           *TypeNode `json:"-"`
+	Err              bool
 }
 
 func (en *TypeNode) IsForType() bool {

@@ -8,6 +8,9 @@ func DiffGenerator(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[str
 	if node == nil {
 		return
 	}
+	if node.Err {
+		return
+	}
 	switch node.Kind {
 	case data.Struct:
 		DiffGeneratorStruct(node, ctx, pkgsForGeneration)

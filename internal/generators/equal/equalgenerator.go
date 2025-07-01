@@ -8,6 +8,9 @@ func EqualGenerator(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[st
 	if node == nil {
 		return
 	}
+	if node.Err {
+		return
+	}
 	switch node.Kind {
 	case data.Struct:
 		EqualGeneratorStruct(node, ctx, pkgsForGeneration)

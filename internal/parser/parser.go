@@ -63,6 +63,7 @@ func ParseInterface(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 	DefaultParsing(node, typ)
 	node.Kind = data.Interface
 	node.SamePkgAsReferer = pkg == node.PkgPath
+	node.Err = true
 }
 
 func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
@@ -81,11 +82,16 @@ func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 	if !node.HasEqual {
 		StructFieldsEqual(node, typ, pkg, typesProcessed)
 	}
+	node.Err = true
+	for _, field := range node.Fields {
+		node.Err = node.Err && field.Err
+	}
 }
 
 func ParseFunc(node *data.TypeNode, typ reflect.Type, pkg string) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Func
+	node.Err = true
 }
 
 func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
@@ -112,6 +118,7 @@ func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed 
 	if !node.SamePkgAsReferer && node.PkgPath != "" {
 		node.Imports[node.PkgPath] = struct{}{}
 	}
+	node.Err = mapNode.Err
 }
 
 func ParseArray(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
@@ -129,6 +136,7 @@ func ParseArray(node *data.TypeNode, typ reflect.Type, pkg string, typesProcesse
 		node.PkgPath = typ.PkgPath()
 	}
 	node.Imports = node.SubNode.Imports
+	node.Err = arrayNode.Err
 }
 
 func ParseSlice(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
@@ -149,6 +157,7 @@ func ParseSlice(node *data.TypeNode, typ reflect.Type, pkg string, typesProcesse
 		node.PkgPath = node.SubNode.PkgPath
 	}
 	node.Imports = node.SubNode.Imports
+	node.Err = sliceNode.Err
 }
 
 func ParsePointer(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
@@ -165,6 +174,7 @@ func ParsePointer(node *data.TypeNode, typ reflect.Type, pkg string, typesProces
 	}
 	node.PackagedType = node.SubNode.PackagedType
 	node.Imports = node.SubNode.Imports
+	node.Err = pointerNode.Err
 }
 
 func StructFieldsEqual(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
