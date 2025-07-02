@@ -47,7 +47,8 @@ func main() {
 	outputDir := "./generated"
 	var typeArgs []string
 	var keepTemp, debug bool
-	var seenOutputDir, seenKeepTemp, seenDebug bool
+	var replaceEqdiffPath string
+	var seenOutputDir, seenKeepTemp, seenDebug, seenReplace bool
 
 	for _, arg := range os.Args[1:] {
 		switch {
@@ -75,6 +76,13 @@ func main() {
 			debug = true
 			seenDebug = true
 
+		case strings.HasPrefix(arg, "--replace-eqdiff="):
+			if seenReplace {
+				exit("Error: --replace-eqdiff specified more than once")
+			}
+			replaceEqdiffPath = strings.TrimPrefix(arg, "--replace-eqdiff=")
+			seenReplace = true
+
 		case strings.HasPrefix(arg, "--"):
 			exit(fmt.Sprintf("Error: unknown option: %s", arg))
 
@@ -89,18 +97,18 @@ func main() {
 
 	if debug {
 		fmt.Println("▶️ Debug mode ON")
-		fmt.Println("• Parsed args:")
+		fmt.Println("\u2022 Parsed args:")
 		fmt.Printf("  - outputDir: %s\n", outputDir)
 		fmt.Printf("  - keepTemp: %v\n", keepTemp)
 		fmt.Printf("  - typeArgs: %v\n", typeArgs)
+		fmt.Printf("  - replaceEqdiffPath: %s\n", replaceEqdiffPath)
 	}
 
-	// Get current module name
 	modName, err := exec.Command("go", "list", "-m").Output()
 	check(err)
 	moduleName := strings.TrimSpace(string(modName))
 	if debug {
-		fmt.Printf("• Detected Go module: %s\n", moduleName)
+		fmt.Printf("\u2022 Detected Go module: %s\n", moduleName)
 	}
 
 	var imports []string
@@ -123,6 +131,8 @@ func main() {
 		typeSpecs = append(typeSpecs, fmt.Sprintf("%s.%s", pkgAlias, typeName))
 	}
 
+	absOutputDir := filepath.Join(cwd(), outputDir)
+	clearOutputDir(absOutputDir, debug)
 	if debug {
 		fmt.Println("• Final import paths:")
 		for _, imp := range imports {
@@ -137,13 +147,10 @@ func main() {
 	data := TemplateData{
 		Imports:   imports,
 		TypeSpecs: typeSpecs,
-		OutputDir: outputDir,
+		OutputDir: absOutputDir,
 	}
 
-	cwd, err := os.Getwd()
-	check(err)
-
-	tmpDir := filepath.Join(cwd, ".eqdiff-tmp")
+	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
 	err = os.MkdirAll(tmpDir, 0o755)
 	check(err)
 
@@ -153,6 +160,76 @@ func main() {
 		fmt.Println("Temporary files kept at:", tmpDir)
 	}
 
+	generateMainGo(tmpDir, data, debug)
+
+	generateGoMod(tmpDir, replaceEqdiffPath, debug)
+	addGoGetDeps(tmpDir, imports, debug)
+
+	cmd := exec.Command("go", "run", ".")
+	cmd.Dir = tmpDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if debug {
+		fmt.Printf("\u2022 Executing: go run . (cwd = %s)\n", tmpDir)
+	}
+	check(cmd.Run())
+}
+
+func cwd() string {
+	dir, err := os.Getwd()
+	check(err)
+	return dir
+}
+
+func generateGoMod(tmpDir, replaceEqdiffPath string, debug bool) {
+	goModPath := filepath.Join(tmpDir, "go.mod")
+	goModContent := "module eqdiff-tmp\n\ngo 1.21\n"
+	if replaceEqdiffPath != "" {
+		goModContent += fmt.Sprintf("\nreplace github.com/haproxytech/eqdiff => %s\n", replaceEqdiffPath)
+	}
+	err := os.WriteFile(goModPath, []byte(goModContent), 0644)
+	check(err)
+
+	if debug {
+		fmt.Println("\u2022 go.mod created")
+		if replaceEqdiffPath != "" {
+			fmt.Printf("\u2022 Added replace directive for eqdiff => %s\n", replaceEqdiffPath)
+		}
+	}
+}
+
+func addGoGetDeps(tmpDir string, imports []string, debug bool) {
+	for _, pkg := range imports {
+		cmd := exec.Command("go", "get", pkg)
+		cmd.Dir = tmpDir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if debug {
+			fmt.Printf("\u2022 Running: go get %s\n", pkg)
+		}
+		check(cmd.Run())
+	}
+
+	cmd := exec.Command("go", "get", "github.com/haproxytech/eqdiff/pkg/eqdiff")
+	cmd.Dir = tmpDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if debug {
+		fmt.Println("\u2022 Running: go get github.com/haproxytech/eqdiff/pkg/eqdiff")
+	}
+	check(cmd.Run())
+
+	cmd = exec.Command("go", "mod", "tidy")
+	cmd.Dir = tmpDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if debug {
+		fmt.Println("\u2022 Running: go mod tidy")
+	}
+	check(cmd.Run())
+}
+
+func generateMainGo(tmpDir string, data TemplateData, debug bool) {
 	mainPath := filepath.Join(tmpDir, "main.go")
 	file, err := os.Create(mainPath)
 	check(err)
@@ -172,17 +249,6 @@ func main() {
 	_, err = file.Write(buf.Bytes())
 	check(err)
 	file.Close()
-
-	// Run the generated Go code
-	cmd := exec.Command("go", "run", "./.eqdiff-tmp")
-	cmd.Dir = cwd
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if debug {
-		fmt.Printf("• Executing: go run ./.eqdiff-tmp (cwd = %s)\n", cwd)
-	}
-	check(cmd.Run())
 }
 
 func check(err error) {
@@ -195,4 +261,14 @@ func check(err error) {
 func exit(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
+}
+
+func clearOutputDir(path string, debug bool) {
+	err := os.RemoveAll(path)
+	check(err)
+	err = os.MkdirAll(path, 0o755)
+	check(err)
+	if debug {
+		fmt.Printf("• Cleared and recreated output directory: %s\n", path)
+	}
 }

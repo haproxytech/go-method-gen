@@ -10,9 +10,10 @@ This tool is useful for applications involving configuration merging, object syn
 
 * **Generate equality functions**: Check deep equality between two struct instances.
 * **Generate diff functions**: Return field-level differences between structs.
-* **Generate merge functions**: Support both shallow and deep in-place merging of fields.
+* **Generate merge functions**: Support both shallow and deep in-place merging of fields.<TODO>
 * **Custom merge logic**: Automatically delegates merge behavior to `Merge` methods if defined <TODO>.
 * **CLI compatible**: Can be used as a standalone binary in development workflows.
+* **Replace local module**: Use local version of eqdiff via `--replace-eqdiff=DIR`.
 
 ---
 
@@ -51,7 +52,7 @@ func (rec StructA) Diff(obj StructA) map[string][]interface{} {
 ## Installation
 
 ```bash
-go install github.com/youruser/eq-diff-gen@latest
+go install github.com/<TBD>/eq-diff-gen@latest
 ```
 
 Or build from source:
@@ -75,6 +76,7 @@ Options:
 * `--keep-temp` – Keep intermediate files like the generated `main.go`
 * `--output-dir DIR` – Specify where to write the generated code
 * `--debug` – Enable verbose debug logging for troubleshooting or inspection
+* `--replace-eqdiff DIR` – Use a local path for the `github.com/haproxytech/eqdiff` module
 
 You must provide fully-qualified type paths (`importpath.TypeName`).
 
@@ -83,7 +85,9 @@ You must provide fully-qualified type paths (`importpath.TypeName`).
 ## Example Use Case
 
 ```bash
-eq-diff-gen --keep-temp --debug github.com/example/project/config.StructConfig
+eq-diff-gen --keep-temp --debug --replace-eqdiff=/home/user/dev/eqdiff github.com/example/project/config.StructConfig
 ```
 
-This generates methods like `Equal`, `Diff`, and `Merge` for `StructConfig`, stores intermediate files, and outputs debug logs.
+This generates methods like `Equal`, `Diff`, and `Merge` for `StructConfig`, stores intermediate files, outputs debug logs, and uses a local path for the `eqdiff` module.
+
+---
