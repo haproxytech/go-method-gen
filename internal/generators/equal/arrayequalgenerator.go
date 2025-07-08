@@ -17,15 +17,15 @@ var equalArrayTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) bo
 
 var equalArrayTemplate = template.Must(template.New("EqualArrayTemplate").Parse(equalArrayTemplateTxt))
 
-func EqualGeneratorArray(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorArray(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Type == "" {
-		EqualGeneratorRawArray(node, ctx, pkgsForGeneration)
+		EqualGeneratorRawArray(node, ctx, equalCtx)
 		return
 	}
-	EqualGeneratorDefinedArray(node, ctx, pkgsForGeneration)
+	EqualGeneratorDefinedArray(node, ctx, equalCtx)
 }
 
-func EqualGeneratorDefinedArray(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorDefinedArray(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Array {
 		// TODO log error
 	}
@@ -45,11 +45,11 @@ func EqualGeneratorDefinedArray(node *data.TypeNode, ctx *data.Ctx, pkgsForGener
 		Imports:                    node.Imports,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGeneratorRawArray(node, ctxEqual, pkgsForGeneration)
+	EqualGeneratorRawArray(node, ctxEqual, equalCtx)
 	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
 }
 
-func EqualGeneratorRawArray(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorRawArray(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Array {
 		// TODO log error
 	}
@@ -64,6 +64,6 @@ func EqualGeneratorRawArray(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneratio
 		Imports:                    node.Imports,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGenerator(subNode, ctxEqual, pkgsForGeneration)
+	Generate(subNode, ctxEqual, equalCtx)
 	data.ApplyTemplateForEqual(node, ctxEqual, equalArrayTemplate)
 }

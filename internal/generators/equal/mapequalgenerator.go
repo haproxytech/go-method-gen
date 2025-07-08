@@ -22,15 +22,15 @@ const equalMapRawTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}})
 
 var equalMapRawTemplate = template.Must(template.New("EqualMapRawTemplate").Parse(equalMapRawTemplateTxt))
 
-func EqualGeneratorMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorMap(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Type == "" {
-		EqualGeneratorRawMap(node, ctx, pkgsForGeneration)
+		EqualGeneratorRawMap(node, ctx, equalCtx)
 		return
 	}
-	EqualGeneratorDefinedMap(node, ctx, pkgsForGeneration)
+	EqualGeneratorDefinedMap(node, ctx, equalCtx)
 }
 
-func EqualGeneratorRawMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorRawMap(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Map {
 		// TODO log error
 	}
@@ -49,11 +49,11 @@ func EqualGeneratorRawMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration 
 		PkgPath: node.PkgPath,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGenerator(subNode, ctxEqual, pkgsForGeneration)
+	Generate(subNode, ctxEqual, equalCtx)
 	data.ApplyTemplateForEqual(node, ctxEqual, equalMapRawTemplate)
 }
 
-func EqualGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Map {
 		// TODO log error
 	}
@@ -73,7 +73,7 @@ func EqualGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGenerat
 	}
 
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGeneratorRawMap(node, ctxEqual, pkgsForGeneration)
+	EqualGeneratorRawMap(node, ctxEqual, equalCtx)
 	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
 
 }

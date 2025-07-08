@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 	"regexp"
@@ -91,4 +92,12 @@ func HasDiffFor(typ reflect.Type) bool {
 		method.Type.In(0).AssignableTo(typ) && // of same type as node
 		method.Type.NumOut() == 1 && // one and only one return value
 		correctReturnType
+}
+
+func ParseOverrideFunc(full string) (pkgPath string, funcName string, err error) {
+	lastDot := strings.LastIndex(full, ".")
+	if lastDot == -1 || lastDot == len(full)-1 {
+		return "", "", fmt.Errorf("invalid override function format: %q", full)
+	}
+	return full[:lastDot], full[lastDot+1:], nil
 }

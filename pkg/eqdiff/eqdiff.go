@@ -9,26 +9,37 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/haproxytech/eqdiff/internal/common"
 	"github.com/haproxytech/eqdiff/internal/data"
 	"github.com/haproxytech/eqdiff/internal/generators/diff"
 	"github.com/haproxytech/eqdiff/internal/generators/equal"
 	"github.com/haproxytech/eqdiff/internal/parser"
 	"github.com/haproxytech/eqdiff/internal/writer"
 	imp "golang.org/x/tools/imports"
+	yaml "gopkg.in/yaml.v3"
 )
 
 type Options struct {
-	OutputDir string
-	Package   string
-	Filename  string
-	Prefix    string
+	OutputDir     string
+	OverridesFile string
 }
 
 func Generate(types []reflect.Type, opts Options) error {
 
 	roots := []*data.TypeNode{}
 	dir := opts.OutputDir
+	var overrides map[string]common.OverrideFuncs
 
+	if opts.OverridesFile != "" {
+		data, err := os.ReadFile(opts.OverridesFile)
+		if err != nil {
+			return fmt.Errorf("failed to read overrides file: %w", err)
+		}
+		err = yaml.Unmarshal(data, &overrides)
+		if err != nil {
+			return fmt.Errorf("failed to parse overrides YAML: %w", err)
+		}
+	}
 	// First we parse the type to get their description by reflection
 	for _, typ := range types {
 		root := &data.TypeNode{}
@@ -44,7 +55,9 @@ func Generate(types []reflect.Type, opts Options) error {
 		if root.HasEqual {
 			continue
 		}
-		equal.EqualGenerator(root, ctx, map[string]struct{}{})
+		equal.Generate(root, ctx, equal.EqualCtx{
+			Overrides: overrides,
+		})
 		if len(ctx.SubCtxs) == 1 {
 			contents := map[string]map[string]string{} // file -> func -> implementation
 			writer.WriteEqualFiles(dir, "", contents, *ctx.SubCtxs[0])
@@ -165,7 +178,7 @@ func Generate(types []reflect.Type, opts Options) error {
 					formattedCode, errFormat := imp.Process("", sb.Bytes(), nil)
 					if errFormat != nil {
 						fmt.Printf("file: %s, err: %s\n", file, errFormat.Error())
-						fmt.Println(string(sb.Bytes()))
+						fmt.Println(sb.String())
 						return errFormat
 					}
 					os.WriteFile(file, formattedCode, 0o644)

@@ -6,7 +6,12 @@ import (
 	"github.com/haproxytech/eqdiff/internal/data"
 )
 
-func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func ExtractPkg(fullpkg string) string {
+	pkg := strings.Split(fullpkg, "/")
+	return pkg[len(pkg)-1]
+}
+
+func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if EqualGeneratorForNodeWithEqual(node, ctx) {
 		return
 	}
@@ -20,10 +25,10 @@ func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration 
 		PkgPath:                    node.PkgPath,
 		Type:                       node.Type,
 	}
-
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
+
 	for _, field := range node.Fields {
-		EqualGenerator(field, ctxEqual, pkgsForGeneration)
+		Generate(field, ctxEqual, equalCtx)
 	}
 
 	ctxEqual.Imports = map[string]struct{}{}

@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/haproxytech/eqdiff/internal/common"
+	yaml "gopkg.in/yaml.v3"
 )
 
 const generatedMainTemplate = `
@@ -28,7 +31,8 @@ func main() {
 		{{end}}
 	}
 	err := eqdiff.Generate(types, eqdiff.Options{
-		OutputDir: "{{.OutputDir}}",
+		OutputDir: {{printf "%q" .OutputDir}},
+		Overrides: {{printf "%q" .OverridesPath}},
 	})
 	if err != nil {
 		fmt.Println("Generation error:", err)
@@ -38,17 +42,18 @@ func main() {
 `
 
 type TemplateData struct {
-	Imports   []string
-	TypeSpecs []string
-	OutputDir string
+	Imports       []string
+	TypeSpecs     []string
+	OutputDir     string
+	OverridesPath string
 }
 
 func main() {
 	outputDir := "./generated"
 	var typeArgs []string
 	var keepTemp, debug bool
-	var replaceEqdiffPath string
-	var seenOutputDir, seenKeepTemp, seenDebug, seenReplace bool
+	var replaceEqdiffPath, overridesPath string
+	var seenOutputDir, seenKeepTemp, seenDebug, seenReplace, seenOverrides bool
 
 	for _, arg := range os.Args[1:] {
 		switch {
@@ -82,7 +87,12 @@ func main() {
 			}
 			replaceEqdiffPath = strings.TrimPrefix(arg, "--replace-eqdiff=")
 			seenReplace = true
-
+		case strings.HasPrefix(arg, "--overrides="):
+			if seenOverrides {
+				exit("Error: --overrides specified more than once")
+			}
+			overridesPath = strings.TrimPrefix(arg, "--overrides=")
+			seenOverrides = true
 		case strings.HasPrefix(arg, "--"):
 			exit(fmt.Sprintf("Error: unknown option: %s", arg))
 
@@ -102,6 +112,7 @@ func main() {
 		fmt.Printf("  - keepTemp: %v\n", keepTemp)
 		fmt.Printf("  - typeArgs: %v\n", typeArgs)
 		fmt.Printf("  - replaceEqdiffPath: %s\n", replaceEqdiffPath)
+		fmt.Printf("  - overridesPath: %s\n", overridesPath)
 	}
 
 	modName, err := exec.Command("go", "list", "-m").Output()
@@ -145,9 +156,10 @@ func main() {
 	}
 
 	data := TemplateData{
-		Imports:   imports,
-		TypeSpecs: typeSpecs,
-		OutputDir: absOutputDir,
+		Imports:       imports,
+		TypeSpecs:     typeSpecs,
+		OutputDir:     absOutputDir,
+		OverridesPath: overridesPath,
 	}
 
 	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
@@ -271,4 +283,33 @@ func clearOutputDir(path string, debug bool) {
 	if debug {
 		fmt.Printf("• Cleared and recreated output directory: %s\n", path)
 	}
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
+func GetTypeAndPackage(packagedType string) (string, string) {
+	dot := strings.LastIndex(packagedType, ".")
+	if dot == -1 || dot == len(packagedType)-1 {
+		exit(fmt.Sprintf("Invalid type format: %s (expected importpath.TypeName)", packagedType))
+	}
+	return packagedType[:dot], packagedType[dot+1:]
+}
+
+func LoadOverridesYaml(path string) (map[string]common.OverrideFuncs, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read overrides file: %w", err)
+	}
+	var parsed map[string]common.OverrideFuncs
+	if err := yaml.Unmarshal(data, &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse overrides YAML: %w", err)
+	}
+	return parsed, nil
 }

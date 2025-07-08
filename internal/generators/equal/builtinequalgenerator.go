@@ -14,15 +14,15 @@ const equalBuiltinDefinedTemplateTxt = `func {{.EqualFuncName}}(x,y {{.Parameter
 
 var equalBuiltinDefinedTemplate = template.Must(template.New("EqualBuiltinDefinedTemplate").Parse(equalBuiltinDefinedTemplateTxt))
 
-func EqualGeneratorBuiltin(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorBuiltin(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.PkgPath == "" {
-		EqualGeneratorBuiltinRaw(node, ctx, pkgsForGeneration)
+		EqualGeneratorBuiltinRaw(node, ctx, equalCtx)
 		return
 	}
-	EqualGeneratorBuiltinDefined(node, ctx, pkgsForGeneration)
+	EqualGeneratorBuiltinDefined(node, ctx, equalCtx)
 }
 
-func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Builtin {
 		// TODO log error
 	}
@@ -61,7 +61,7 @@ func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, pkgsForGen
 	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(" + ctxEqual.LeftSideComparison + ", " + ctxEqual.RightSideComparison + ")"
 }
 
-func EqualGeneratorBuiltinRaw(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorBuiltinRaw(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	var equalImplementation, unequalImplementation string
 	if node.IsForType() {
 		equalImplementation = ctx.LeftSideComparison + " == " + ctx.RightSideComparison

@@ -2,7 +2,7 @@ package equal
 
 import "github.com/haproxytech/eqdiff/internal/data"
 
-func EqualGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Interface {
 		// TODO log error
 	}

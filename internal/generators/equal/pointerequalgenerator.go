@@ -15,15 +15,15 @@ var equalPointerTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) 
 
 var equalPointerTemplate = template.Must(template.New("EqualPointerTemplate").Parse(equalPointerTemplateTxt))
 
-func EqualGeneratorPointer(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorPointer(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Type == "" {
-		EqualGeneratorPointerRawType(node, ctx, pkgsForGeneration)
+		EqualGeneratorPointerRawType(node, ctx, equalCtx)
 		return
 	}
-	EqualGeneratorPointerDefinedType(node, ctx, pkgsForGeneration)
+	EqualGeneratorPointerDefinedType(node, ctx, equalCtx)
 }
 
-func EqualGeneratorPointerDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorPointerDefinedType(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Pointer {
 		// TODO log error
 	}
@@ -44,11 +44,11 @@ func EqualGeneratorPointerDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsFo
 		Imports:                    node.Imports,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGeneratorPointerRawType(node, ctxEqual, pkgsForGeneration)
+	EqualGeneratorPointerRawType(node, ctxEqual, equalCtx)
 	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
 }
 
-func EqualGeneratorPointerRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorPointerRawType(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Pointer {
 		// TODO log error
 	}
@@ -66,7 +66,7 @@ func EqualGeneratorPointerRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGen
 		PkgPath:                    node.PkgPath,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGenerator(subNode, ctxEqual, pkgsForGeneration)
+	Generate(subNode, ctxEqual, equalCtx)
 	ctxEqual.Err = ctxEqual.SubCtxs[0].Err
 	data.ApplyTemplateForEqual(node, ctxEqual, equalPointerTemplate)
 }

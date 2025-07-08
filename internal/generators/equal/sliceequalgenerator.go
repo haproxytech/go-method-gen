@@ -23,15 +23,15 @@ var equalSliceRawTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}})
 
 var equalSliceRawTemplate = template.Must(template.New("EqualSliceRawTemplate").Parse(equalSliceRawTemplateTxt))
 
-func EqualGeneratorSlice(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorSlice(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Type == "" {
-		EqualGeneratorSliceRawType(node, ctx, pkgsForGeneration)
+		EqualGeneratorSliceRawType(node, ctx, equalCtx)
 		return
 	}
-	EqualGeneratorSliceDefinedType(node, ctx, pkgsForGeneration)
+	EqualGeneratorSliceDefinedType(node, ctx, equalCtx)
 }
 
-func EqualGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Slice {
 		// TODO log error
 	}
@@ -49,12 +49,12 @@ func EqualGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGener
 		PkgPath:                    node.PkgPath,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGenerator(subNode, ctxEqual, pkgsForGeneration)
+	Generate(subNode, ctxEqual, equalCtx)
 	ctxEqual.Err = ctxEqual.SubCtxs[0].Err
 	data.ApplyTemplateForEqual(node, ctxEqual, equalSliceRawTemplate)
 }
 
-func EqualGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func EqualGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Slice {
 		// TODO log error
 	}
@@ -75,6 +75,6 @@ func EqualGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsForG
 	}
 
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
-	EqualGeneratorSliceRawType(node, ctxEqual, pkgsForGeneration)
+	EqualGeneratorSliceRawType(node, ctxEqual, equalCtx)
 	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
 }

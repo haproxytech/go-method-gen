@@ -1,6 +1,9 @@
 package equal
 
-import "github.com/haproxytech/eqdiff/internal/data"
+import (
+	"github.com/haproxytech/eqdiff/internal/common"
+	"github.com/haproxytech/eqdiff/internal/data"
+)
 
 func EqualGeneratorForNodeWithEqual(node *data.TypeNode, ctx *data.Ctx) bool {
 	if !node.HasEqual {
@@ -23,4 +26,8 @@ func EqualGeneratorForNodeWithEqual(node *data.TypeNode, ctx *data.Ctx) bool {
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	return true
+}
+
+type EqualCtx struct {
+	Overrides map[string]common.OverrideFuncs
 }
