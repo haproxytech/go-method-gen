@@ -15,15 +15,15 @@ var builtinDiffTemplateTxt = `if {{ .LeftSideComparison }}.{{ .FieldName }} != {
 
 var diffBuiltinTemplate = template.Must(template.New("DiffBuiltinTemplate").Parse(builtinDiffTemplateTxt))
 
-func DiffGeneratorBuiltin(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.PkgPath == "" {
-		DiffGeneratorBuiltinRaw(node, ctx, pkgsForGeneration)
+		DiffGeneratorBuiltinRaw(node, ctx, diffCtx)
 		return
 	}
-	DiffGeneratorDefinedBuiltin(node, ctx, pkgsForGeneration)
+	DiffGeneratorDefinedBuiltin(node, ctx, diffCtx)
 }
 
-func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Builtin {
 		// TODO log error
 	}
@@ -74,7 +74,7 @@ func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, pkgsForGene
 }`, diffFuncName, parameterType, name)
 }
 
-func DiffGeneratorBuiltinRaw(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorBuiltinRaw(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	diffImplementation := strings.Builder{}
 	args := map[string]string{
 		"LeftSideComparison":  ctx.LeftSideComparison,

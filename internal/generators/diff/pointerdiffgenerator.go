@@ -41,15 +41,15 @@ const diffPointerDefinedTemplateTxt = `if x == nil && y == nil {
 
 var diffPointerRawTemplate = template.Must(template.New("DiffPointerRawTemplate").Parse(diffPointerRawTemplateTxt))
 
-func DiffGeneratorPointer(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Type == "" {
-		DiffGeneratorRawPointer(node, ctx, pkgsForGeneration)
+		DiffGeneratorRawPointer(node, ctx, diffCtx)
 		return
 	}
-	DiffGeneratorDefinedPointer(node, ctx, pkgsForGeneration)
+	DiffGeneratorDefinedPointer(node, ctx, diffCtx)
 }
 
-func DiffGeneratorDefinedPointer(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorDefinedPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Pointer {
 		// TODO log error
 	}
@@ -68,13 +68,13 @@ func DiffGeneratorDefinedPointer(node *data.TypeNode, ctx *data.Ctx, pkgsForGene
 		Imports:                    node.Imports,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
-	DiffGeneratorRawPointer(node, ctxDiff, pkgsForGeneration)
+	DiffGeneratorRawPointer(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	data.ApplyTemplateForDiff(node, ctxDiff, diffPointerRawTemplate)
 	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
 }
 
-func DiffGeneratorRawPointer(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorRawPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Pointer {
 		// TODO log error
 	}
@@ -90,7 +90,7 @@ func DiffGeneratorRawPointer(node *data.TypeNode, ctx *data.Ctx, pkgsForGenerati
 		ObjectKind:                 data.KindToString(node.Kind),
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
-	DiffGenerator(subNode, ctxDiff, pkgsForGeneration)
+	Generate(subNode, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	data.ApplyTemplateForDiff(node, ctxDiff, diffPointerRawTemplate)
 }

@@ -6,11 +6,6 @@ import (
 	"github.com/haproxytech/eqdiff/internal/data"
 )
 
-func ExtractPkg(fullpkg string) string {
-	pkg := strings.Split(fullpkg, "/")
-	return pkg[len(pkg)-1]
-}
-
 func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if EqualGeneratorForNodeWithEqual(node, ctx) {
 		return

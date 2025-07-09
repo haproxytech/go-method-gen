@@ -124,7 +124,9 @@ func Generate(types []reflect.Type, opts Options) error {
 		if root.HasDiff {
 			continue
 		}
-		diff.DiffGenerator(root, ctx, map[string]struct{}{})
+		diff.Generate(root, ctx, diff.DiffCtx{
+			Overrides: overrides,
+		})
 		if len(ctx.SubCtxs) == 1 {
 			contents := map[string]map[string]string{} // file -> func -> implementation
 			writer.WriteDiffFiles(dir, "", contents, *ctx.SubCtxs[0])

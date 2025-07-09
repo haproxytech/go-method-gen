@@ -2,7 +2,7 @@ package diff
 
 import "github.com/haproxytech/eqdiff/internal/data"
 
-func DiffGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Interface {
 		// TODO log error
 	}

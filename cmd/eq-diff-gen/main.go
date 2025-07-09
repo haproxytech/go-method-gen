@@ -32,7 +32,7 @@ func main() {
 	}
 	err := eqdiff.Generate(types, eqdiff.Options{
 		OutputDir: {{printf "%q" .OutputDir}},
-		Overrides: {{printf "%q" .OverridesPath}},
+		OverridesFile: {{printf "%q" .OverridesPath}},
 	})
 	if err != nil {
 		fmt.Println("Generation error:", err)

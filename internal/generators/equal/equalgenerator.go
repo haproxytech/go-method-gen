@@ -2,6 +2,7 @@ package equal
 
 import (
 	"github.com/haproxytech/eqdiff/internal/data"
+	"github.com/haproxytech/eqdiff/internal/utils"
 )
 
 func Generate(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
@@ -27,9 +28,9 @@ func Generate(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 		ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 		if node.UpNode == nil {
 			ctxEqual.EqualFuncName = fn.Name
-			ctxEqual.EqualImplementation = ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj)"
+			ctxEqual.EqualImplementation = utils.ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj)"
 		} else {
-			ctxEqual.EqualFuncName = ExtractPkg(fn.Pkg) + "." + fn.Name
+			ctxEqual.EqualFuncName = utils.ExtractPkg(fn.Pkg) + "." + fn.Name
 		}
 
 		if ctxEqual.Imports == nil {

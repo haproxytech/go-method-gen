@@ -26,15 +26,15 @@ var diffArrayTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[
 
 var diffArrayTemplate = template.Must(template.New("DiffArrayTemplate").Parse(diffArrayTemplateTxt))
 
-func DiffGeneratorArray(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorArray(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Type == "" {
-		DiffGeneratorArrayRawType(node, ctx, pkgsForGeneration)
+		DiffGeneratorArrayRawType(node, ctx, diffCtx)
 		return
 	}
-	DiffGeneratorArrayDefinedType(node, ctx, pkgsForGeneration)
+	DiffGeneratorArrayDefinedType(node, ctx, diffCtx)
 }
 
-func DiffGeneratorArrayDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorArrayDefinedType(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Array {
 		// TODO log error
 	}
@@ -58,13 +58,13 @@ func DiffGeneratorArrayDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsForGe
 	}
 	ctxDiff.Imports["fmt"] = struct{}{}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
-	DiffGeneratorArrayRawType(node, ctxDiff, pkgsForGeneration)
+	DiffGeneratorArrayRawType(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
 
 }
 
-func DiffGeneratorArrayRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorArrayRawType(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Array {
 		// TODO log error
 	}
@@ -84,7 +84,7 @@ func DiffGeneratorArrayRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGenera
 	ctxDiff.Imports["fmt"] = struct{}{}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 	if subNode.Kind != data.Builtin {
-		DiffGenerator(subNode, ctxDiff, pkgsForGeneration)
+		Generate(subNode, ctxDiff, diffCtx)
 	}
 	data.ApplyTemplateForDiff(node, ctxDiff, diffArrayTemplate)
 }

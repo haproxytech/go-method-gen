@@ -54,15 +54,15 @@ var diffSliceRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) m
 
 var diffSliceRawTemplate = template.Must(template.New("DiffSliceRawTemplate").Parse(diffSliceRawTemplateTxt))
 
-func DiffGeneratorSlice(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorSlice(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Type == "" {
-		DiffGeneratorSliceRawType(node, ctx, pkgsForGeneration)
+		DiffGeneratorSliceRawType(node, ctx, diffCtx)
 		return
 	}
-	DiffGeneratorSliceDefinedType(node, ctx, pkgsForGeneration)
+	DiffGeneratorSliceDefinedType(node, ctx, diffCtx)
 }
 
-func DiffGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Slice {
 		// TODO log error
 	}
@@ -85,12 +85,12 @@ func DiffGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, pkgsForGe
 	}
 	ctxDiff.Imports["fmt"] = struct{}{}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
-	DiffGeneratorSliceRawType(node, ctxDiff, pkgsForGeneration)
+	DiffGeneratorSliceRawType(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
 }
 
-func DiffGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Slice {
 		// TODO log error
 	}
@@ -112,7 +112,7 @@ func DiffGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, pkgsForGenera
 	}
 	ctxDiff.Imports["fmt"] = struct{}{}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
-	DiffGenerator(subNode, ctxDiff, pkgsForGeneration)
+	Generate(subNode, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	data.ApplyTemplateForDiff(node, ctxDiff, diffSliceRawTemplate)
 }

@@ -59,15 +59,15 @@ const diffMapDefinedTemplateTxt = `if (x == nil && y == nil) || (len(x) ==0 && l
 
 var diffMapRawTemplate = template.Must(template.New("DiffMapRawTemplate").Parse(diffMapRawTemplateTxt))
 
-func DiffGeneratorMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorMap(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Type == "" {
-		DiffGeneratorRawMap(node, ctx, pkgsForGeneration)
+		DiffGeneratorRawMap(node, ctx, diffCtx)
 		return
 	}
-	DiffGeneratorDefinedMap(node, ctx, pkgsForGeneration)
+	DiffGeneratorDefinedMap(node, ctx, diffCtx)
 }
 
-func DiffGeneratorRawMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorRawMap(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Map {
 		// TODO log error
 	}
@@ -87,12 +87,12 @@ func DiffGeneratorRawMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration m
 	}
 	ctxDiff.Imports["fmt"] = struct{}{}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
-	DiffGenerator(subNode, ctxDiff, pkgsForGeneration)
+	Generate(subNode, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	data.ApplyTemplateForDiff(node, ctxDiff, diffMapRawTemplate)
 }
 
-func DiffGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Map {
 		// TODO log error
 	}
@@ -115,7 +115,7 @@ func DiffGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, pkgsForGenerati
 	}
 	ctxDiff.Imports["fmt"] = struct{}{}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
-	DiffGeneratorRawMap(node, ctxDiff, pkgsForGeneration)
+	DiffGeneratorRawMap(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
 }

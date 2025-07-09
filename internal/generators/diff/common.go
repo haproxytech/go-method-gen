@@ -1,6 +1,9 @@
 package diff
 
-import "github.com/haproxytech/eqdiff/internal/data"
+import (
+	"github.com/haproxytech/eqdiff/internal/common"
+	"github.com/haproxytech/eqdiff/internal/data"
+)
 
 func DiffGeneratorForNodeWithDiff(node *data.TypeNode, ctx *data.Ctx) bool {
 	if !node.HasDiff {
@@ -20,4 +23,8 @@ func DiffGeneratorForNodeWithDiff(node *data.TypeNode, ctx *data.Ctx) bool {
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 	return true
+}
+
+type DiffCtx struct {
+	Overrides map[string]common.OverrideFuncs
 }

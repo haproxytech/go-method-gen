@@ -6,7 +6,7 @@ import (
 	"github.com/haproxytech/eqdiff/internal/data"
 )
 
-func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration map[string]struct{}) {
+func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if DiffGeneratorForNodeWithDiff(node, ctx) {
 		return
 	}
@@ -23,7 +23,7 @@ func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, pkgsForGeneration m
 
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 	for _, field := range node.Fields {
-		DiffGenerator(field, ctxDiff, pkgsForGeneration)
+		Generate(field, ctxDiff, diffCtx)
 	}
 
 	ctxDiff.Imports = map[string]struct{}{}
