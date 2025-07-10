@@ -53,6 +53,7 @@ func main() {
 	var typeArgs []string
 	var keepTemp, debug bool
 	var replaceEqdiffPath, overridesPath string
+	var extraReplaces []string
 	var seenOutputDir, seenKeepTemp, seenDebug, seenReplace, seenOverrides bool
 
 	for _, arg := range os.Args[1:] {
@@ -93,6 +94,8 @@ func main() {
 			}
 			overridesPath = strings.TrimPrefix(arg, "--overrides=")
 			seenOverrides = true
+		case strings.HasPrefix(arg, "--replace="):
+			extraReplaces = append(extraReplaces, strings.TrimPrefix(arg, "--replace="))
 		case strings.HasPrefix(arg, "--"):
 			exit(fmt.Sprintf("Error: unknown option: %s", arg))
 
@@ -113,6 +116,7 @@ func main() {
 		fmt.Printf("  - typeArgs: %v\n", typeArgs)
 		fmt.Printf("  - replaceEqdiffPath: %s\n", replaceEqdiffPath)
 		fmt.Printf("  - overridesPath: %s\n", overridesPath)
+		fmt.Printf("  - extraReplaces: %v\n", extraReplaces)
 	}
 
 	modName, err := exec.Command("go", "list", "-m").Output()
@@ -123,19 +127,32 @@ func main() {
 	}
 
 	var imports []string
+	var importsWithVersion []string
 	var typeSpecs []string
 	importSet := make(map[string]bool)
 
 	for _, full := range typeArgs {
+		var version string
+		at := strings.LastIndex(full, "@")
+		if at != -1 {
+			version = full[at+1:]
+			full = full[:at]
+		}
+
 		dot := strings.LastIndex(full, ".")
 		if dot == -1 || dot == len(full)-1 {
 			exit(fmt.Sprintf("Invalid type format: %s (expected importpath.TypeName)", full))
 		}
 		importPath := full[:dot]
+		importWithVersion := importPath
+		if version != "" {
+			importWithVersion += "@" + version
+		}
 		typeName := full[dot+1:]
 
 		if !importSet[importPath] {
 			imports = append(imports, importPath)
+			importsWithVersion = append(importsWithVersion, importWithVersion)
 			importSet[importPath] = true
 		}
 		pkgAlias := filepath.Base(importPath)
@@ -174,8 +191,8 @@ func main() {
 
 	generateMainGo(tmpDir, data, debug)
 
-	generateGoMod(tmpDir, replaceEqdiffPath, debug)
-	addGoGetDeps(tmpDir, imports, debug)
+	generateGoModWithReplaces(tmpDir, replaceEqdiffPath, extraReplaces, debug)
+	addGoGetDeps(tmpDir, importsWithVersion, debug)
 
 	cmd := exec.Command("go", "run", ".")
 	cmd.Dir = tmpDir
@@ -193,11 +210,18 @@ func cwd() string {
 	return dir
 }
 
-func generateGoMod(tmpDir, replaceEqdiffPath string, debug bool) {
+func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces []string, debug bool) {
 	goModPath := filepath.Join(tmpDir, "go.mod")
 	goModContent := "module eqdiff-tmp\n\ngo 1.21\n"
 	if replaceEqdiffPath != "" {
 		goModContent += fmt.Sprintf("\nreplace github.com/haproxytech/eqdiff => %s\n", replaceEqdiffPath)
+	}
+	for _, repl := range extraReplaces {
+		parts := strings.SplitN(repl, ":", 2)
+		if len(parts) != 2 {
+			exit(fmt.Sprintf("Invalid replace syntax: %s (expected 'module => path')", repl))
+		}
+		goModContent += fmt.Sprintf("replace %s => %s\n", strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 	}
 	err := os.WriteFile(goModPath, []byte(goModContent), 0644)
 	check(err)
@@ -207,11 +231,14 @@ func generateGoMod(tmpDir, replaceEqdiffPath string, debug bool) {
 		if replaceEqdiffPath != "" {
 			fmt.Printf("\u2022 Added replace directive for eqdiff => %s\n", replaceEqdiffPath)
 		}
+		for _, repl := range extraReplaces {
+			fmt.Printf("• Added replace directive: %s\n", repl)
+		}
 	}
 }
 
-func addGoGetDeps(tmpDir string, imports []string, debug bool) {
-	for _, pkg := range imports {
+func addGoGetDeps(tmpDir string, importsWithVersion []string, debug bool) {
+	for _, pkg := range importsWithVersion {
 		cmd := exec.Command("go", "get", pkg)
 		cmd.Dir = tmpDir
 		cmd.Stdout = os.Stdout
