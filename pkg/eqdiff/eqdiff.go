@@ -22,6 +22,7 @@ import (
 type Options struct {
 	OutputDir     string
 	OverridesFile string
+	HeaderPath    string
 }
 
 func Generate(types []reflect.Type, opts Options) error {
@@ -29,7 +30,14 @@ func Generate(types []reflect.Type, opts Options) error {
 	roots := []*data.TypeNode{}
 	dir := opts.OutputDir
 	var overrides map[string]common.OverrideFuncs
-
+	var headerContent string
+	if opts.HeaderPath != "" {
+		data, err := os.ReadFile(opts.HeaderPath)
+		if err != nil {
+			return err
+		}
+		headerContent = string(data)
+	}
 	if opts.OverridesFile != "" {
 		data, err := os.ReadFile(opts.OverridesFile)
 		if err != nil {
@@ -92,6 +100,7 @@ func Generate(types []reflect.Type, opts Options) error {
 				if err != nil {
 					return err
 				}
+				sb.WriteString(headerContent + "\n")
 				pkg := funcs["Package"]
 				sb.WriteString(pkg + "\n")
 				delete(funcs, "Package")
@@ -161,6 +170,7 @@ func Generate(types []reflect.Type, opts Options) error {
 				if err != nil {
 					return err
 				}
+				sb.WriteString(headerContent + "\n")
 				pkg := funcs["Package"]
 				sb.WriteString(pkg + "\n")
 				delete(funcs, "Package")

@@ -33,6 +33,7 @@ func main() {
 	err := eqdiff.Generate(types, eqdiff.Options{
 		OutputDir: {{printf "%q" .OutputDir}},
 		OverridesFile: {{printf "%q" .OverridesPath}},
+		HeaderPath: {{printf "%q" .HeaderPath}},
 	})
 	if err != nil {
 		fmt.Println("Generation error:", err)
@@ -46,15 +47,17 @@ type TemplateData struct {
 	TypeSpecs     []string
 	OutputDir     string
 	OverridesPath string
+	HeaderPath    string
 }
 
 func main() {
 	outputDir := "./generated"
 	var typeArgs []string
 	var keepTemp, debug bool
-	var replaceEqdiffPath, overridesPath string
+	var replaceEqdiffPath, overridesPath, headerPath string
 	var extraReplaces []string
-	var seenOutputDir, seenKeepTemp, seenDebug, seenReplace, seenOverrides bool
+	var seenOutputDir, seenKeepTemp, seenDebug,
+		seenHeader, seenReplace, seenOverrides bool
 
 	for _, arg := range os.Args[1:] {
 		switch {
@@ -96,6 +99,12 @@ func main() {
 			seenOverrides = true
 		case strings.HasPrefix(arg, "--replace="):
 			extraReplaces = append(extraReplaces, strings.TrimPrefix(arg, "--replace="))
+		case strings.HasPrefix(arg, "--header-file="):
+			if seenHeader {
+				exit("Error: --header-file specified more than once")
+			}
+			headerPath = strings.TrimPrefix(arg, "--header-file=")
+			seenHeader = true
 		case strings.HasPrefix(arg, "--"):
 			exit(fmt.Sprintf("Error: unknown option: %s", arg))
 
@@ -125,7 +134,6 @@ func main() {
 	if debug {
 		fmt.Printf("\u2022 Detected Go module: %s\n", moduleName)
 	}
-
 	var imports []string
 	var importsWithVersion []string
 	var typeSpecs []string
@@ -177,6 +185,7 @@ func main() {
 		TypeSpecs:     typeSpecs,
 		OutputDir:     absOutputDir,
 		OverridesPath: overridesPath,
+		HeaderPath:    headerPath,
 	}
 
 	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
