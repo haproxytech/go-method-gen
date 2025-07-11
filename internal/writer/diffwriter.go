@@ -36,7 +36,7 @@ func WriteDiffFiles(dir, file string, files map[string]map[string]string, ctx da
 	}
 
 	if ctx.ObjectKind == data.KindToString(data.Struct) || ctx.DefinedType {
-		file = filepath.Join(dir, ctx.PkgPath, strings.ToLower(ctx.Type)+"_diff.go")
+		file = filepath.Join(dir, ctx.PkgPath, strings.ToLower(ctx.Type)+"_diff_generated.go")
 		pathParts := strings.Split(ctx.PkgPath, "/")
 		args := map[string]string{
 			"LeftSideComparison":  ctx.LeftSideComparison,

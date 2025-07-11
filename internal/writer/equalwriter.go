@@ -29,7 +29,7 @@ func WriteEqualFiles(dir, file string, files map[string]map[string]string, ctx d
 	}
 
 	if ctx.ObjectKind == data.KindToString(data.Struct) || ctx.DefinedType {
-		file = filepath.Join(dir, ctx.PkgPath, strings.ToLower(ctx.Type)+"_equal.go")
+		file = filepath.Join(dir, ctx.PkgPath, strings.ToLower(ctx.Type)+"_equal_generated.go")
 		pathParts := strings.Split(ctx.PkgPath, "/")
 		args := map[string]string{
 			"LeftSideComparison":  ctx.LeftSideComparison,
