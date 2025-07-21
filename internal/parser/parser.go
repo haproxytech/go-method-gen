@@ -10,6 +10,7 @@ import (
 var typesToSkip = map[string]struct{}{
 	"v1.TypeMeta":   {},
 	"v1.ObjectMeta": {},
+	"v1.ListMeta":   {},
 }
 
 func TypeAlreadyVisited(typ reflect.Type, fqnTypesProcessed map[string]struct{}) bool {

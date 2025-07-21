@@ -14,6 +14,7 @@ This tool is useful for applications involving configuration merging, object syn
 * **Header injection**: Add license or documentation header to generated code.
 * **Module path replacement**: Use local module paths for `eqdiff` or any dependency.
 * **CLI compatible**: Usable as a standalone binary or as a scriptable tool in CI/CD.
+* **Directory scanning**: Automatically scan a directory for Go types with --scan.
 
 ---
 
@@ -71,6 +72,14 @@ go build -o eq-diff-gen
 eq-diff-gen [flags] importpath.TypeName [...]
 ```
 
+You must provide fully-qualified type paths (importpath.TypeName), unless using --scan.
+
+Alternatively, use the --scan flag to automatically discover all types in a directory:
+```bash
+eq-diff-gen --scan=./path/to/pkg [flags]
+```
+⚠️ --scan is exclusive with explicit type arguments. You must use one or the other, not both.
+
 Options:
 |option|functionality|
 |--|--|
@@ -81,8 +90,9 @@ Options:
 --replace=MOD:LOCALPATH|	Add a replace directive in the generated go.mod (can be used multiple times)  |
 --overrides=FILE.yaml|YAML file to override diff/equal logic for specific fields  |
 --header-file=PATH|Optional Go file to prepend as header in generated output  |
+--scan=DIR|	Scan a directory to extract all types (exclusive with type arguments) |
 
-You must provide fully-qualified type paths (`importpath.TypeName`).
+You must provide fully-qualified type paths (`importpath.TypeName`) if not using scan option.
 
 ---
 ## Type Argument Format

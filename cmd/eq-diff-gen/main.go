@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,9 +61,17 @@ func main() {
 	var extraReplaces []string
 	var seenOutputDir, seenKeepTemp, seenDebug,
 		seenHeader, seenReplace, seenOverrides bool
+	var scanPath string
+	var seenScan bool
 
 	for _, arg := range os.Args[1:] {
 		switch {
+		case strings.HasPrefix(arg, "--scan="):
+			if seenScan {
+				exit("Error: --scan specified more than once")
+			}
+			scanPath = strings.TrimPrefix(arg, "--scan=")
+			seenScan = true
 		case strings.HasPrefix(arg, "--output-dir="):
 			if seenOutputDir {
 				exit("Error: --output-dir specified more than once")
@@ -113,8 +124,12 @@ func main() {
 		}
 	}
 
-	if len(typeArgs) == 0 {
-		exit("Error: at least one importpath.Type must be provided")
+	if len(typeArgs) > 0 && seenScan {
+		exit("Error: you cannot provide types as arguments and use --scan=<path> at the same time")
+	}
+
+	if len(typeArgs) == 0 && !seenScan {
+		exit("Error: you must provide either types as arguments or use --scan=<path>")
 	}
 
 	if debug {
@@ -128,16 +143,51 @@ func main() {
 		fmt.Printf("  - extraReplaces: %v\n", extraReplaces)
 	}
 
-	modName, err := exec.Command("go", "list", "-m").Output()
-	check(err)
-	moduleName := strings.TrimSpace(string(modName))
+	var moduleName string
+	if seenScan {
+		cmd := exec.Command("go", "list", "-m")
+		cmd.Dir = scanPath
+		out, err := cmd.Output()
+		check(err)
+		moduleName = strings.TrimSpace(string(out))
+	} else {
+		modName, err := exec.Command("go", "list", "-m").Output()
+		check(err)
+		moduleName = strings.TrimSpace(string(modName))
+	}
+
 	if debug {
 		fmt.Printf("\u2022 Detected Go module: %s\n", moduleName)
 	}
-	var imports []string
-	var importsWithVersion []string
+
 	var typeSpecs []string
+	var importsWithVersion []string
+
+	var imports []string
 	importSet := make(map[string]bool)
+
+	if seenScan {
+		importsScan, specs, err := scanTypes(scanPath, moduleName)
+		imports = importsScan
+		check(err)
+		for i := range imports {
+			importSet[imports[i]] = true
+		}
+		typeSpecs = append([]string{}, specs...)
+
+		importsWithVersion = imports
+
+		if debug {
+			fmt.Println("• Scanned types:")
+			for _, t := range typeSpecs {
+				fmt.Printf("  - %s\n", t)
+			}
+			fmt.Println("• From imports:")
+			for _, imp := range imports {
+				fmt.Printf("  - %s\n", imp)
+			}
+		}
+	}
 
 	for _, full := range typeArgs {
 		var version string
@@ -189,7 +239,7 @@ func main() {
 	}
 
 	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
-	err = os.MkdirAll(tmpDir, 0o755)
+	err := os.MkdirAll(tmpDir, 0o755)
 	check(err)
 
 	if !keepTemp {
@@ -213,12 +263,15 @@ func main() {
 	check(cmd.Run())
 }
 
+// cwd returns the current working directory or exits on error.
 func cwd() string {
 	dir, err := os.Getwd()
 	check(err)
 	return dir
 }
 
+// generateGoModWithReplaces creates a temporary go.mod file with optional replace directives.
+// Used to redirect module paths for local development or testing.
 func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces []string, debug bool) {
 	goModPath := filepath.Join(tmpDir, "go.mod")
 	goModContent := "module eqdiff-tmp\n\ngo 1.21\n"
@@ -246,6 +299,8 @@ func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces [
 	}
 }
 
+// addGoGetDeps runs 'go get' on required dependencies and tidies up the module.
+// It ensures all necessary packages are downloaded in the temp workspace.
 func addGoGetDeps(tmpDir string, importsWithVersion []string, debug bool) {
 	for _, pkg := range importsWithVersion {
 		cmd := exec.Command("go", "get", pkg)
@@ -277,6 +332,8 @@ func addGoGetDeps(tmpDir string, importsWithVersion []string, debug bool) {
 	check(cmd.Run())
 }
 
+// generateMainGo creates a main.go file inside the temp directory.
+// This file serves as the actual generator which will invoke eqdiff.Generate with provided types.
 func generateMainGo(tmpDir string, data TemplateData, debug bool) {
 	mainPath := filepath.Join(tmpDir, "main.go")
 	file, err := os.Create(mainPath)
@@ -299,6 +356,7 @@ func generateMainGo(tmpDir string, data TemplateData, debug bool) {
 	file.Close()
 }
 
+// check exits the program with an error message if err is not nil.
 func check(err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
@@ -306,11 +364,13 @@ func check(err error) {
 	}
 }
 
+// exit prints an error message and exits with code 1.
 func exit(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }
 
+// clearOutputDir deletes and recreates the given output directory.
 func clearOutputDir(path string, debug bool) {
 	err := os.RemoveAll(path)
 	check(err)
@@ -321,15 +381,8 @@ func clearOutputDir(path string, debug bool) {
 	}
 }
 
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-	return false
-}
-
+// GetTypeAndPackage splits a fully qualified type string into import path and type name.
+// e.g., "github.com/foo/bar.TypeName" → ("github.com/foo/bar", "TypeName")
 func GetTypeAndPackage(packagedType string) (string, string) {
 	dot := strings.LastIndex(packagedType, ".")
 	if dot == -1 || dot == len(packagedType)-1 {
@@ -338,6 +391,7 @@ func GetTypeAndPackage(packagedType string) (string, string) {
 	return packagedType[:dot], packagedType[dot+1:]
 }
 
+// LoadOverridesYaml reads and parses a YAML file that defines override functions.
 func LoadOverridesYaml(path string) (map[string]common.OverrideFuncs, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -348,4 +402,76 @@ func LoadOverridesYaml(path string) (map[string]common.OverrideFuncs, error) {
 		return nil, fmt.Errorf("failed to parse overrides YAML: %w", err)
 	}
 	return parsed, nil
+}
+
+// scanTypes parses all Go source files in the given directory (scanPath),
+// and returns the import path and a list of discovered type names in that package.
+// It uses the moduleName and the relative path from the module root to compute the full import path.
+func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
+	absScanPath, err := filepath.Abs(scanPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	modRoot, err := findModuleRoot(absScanPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not find module root: %w", err)
+	}
+
+	relPath, err := filepath.Rel(modRoot, absScanPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot determine path relative to module root: %w", err)
+	}
+
+	// Assemble the full import path for the scanned directory
+	importPath := moduleName
+	if relPath != "." {
+		importPath = moduleName + "/" + filepath.ToSlash(relPath)
+	}
+
+	fset := token.NewFileSet()
+	pkgs, err := parser.ParseDir(fset, scanPath, nil, 0)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var typeSpecs []string
+	for _, pkg := range pkgs {
+		for _, file := range pkg.Files {
+			for _, decl := range file.Decls {
+				genDecl, ok := decl.(*ast.GenDecl)
+				if !ok || genDecl.Tok != token.TYPE {
+					continue
+				}
+				for _, spec := range genDecl.Specs {
+					typeSpec, ok := spec.(*ast.TypeSpec)
+					if !ok {
+						continue
+					}
+					typeSpecs = append(typeSpecs, fmt.Sprintf("%s.%s", filepath.Base(importPath), typeSpec.Name.Name))
+				}
+			}
+		}
+	}
+
+	return []string{importPath}, typeSpecs, nil
+}
+
+// findModuleRoot traverses parent directories upwards to locate the nearest go.mod file.
+// It returns the path to the module root.
+func findModuleRoot(path string) (string, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(path, "go.mod")); err == nil {
+			return path, nil
+		}
+		parent := filepath.Dir(path)
+		if parent == path {
+			return "", fmt.Errorf("go.mod not found in any parent of %s", path)
+		}
+		path = parent
+	}
 }
