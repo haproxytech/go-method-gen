@@ -8,10 +8,11 @@ import (
 	"go/token"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/haproxytech/eqdiff/internal/utils"
 )
 
 const generatedMainTemplate = `
@@ -178,7 +179,7 @@ func main() {
 
 		// Fill alias map for scanned imports:
 		for _, imp := range importsScan {
-			importAliasMap[imp] = aliasImport(filepath.Base(imp))
+			importAliasMap[imp] = utils.AliasImport(filepath.Base(imp))
 		}
 
 		if debug {
@@ -223,7 +224,7 @@ func main() {
 			importsWithVersion = append(importsWithVersion, importWithVersion)
 
 			// Alias detection for dash in package base name
-			importAliasMap[importPath] = aliasImport(filepath.Base(importPath))
+			importAliasMap[importPath] = utils.AliasImport(filepath.Base(importPath))
 		}
 		pkgAlias := importAliasMap[importPath]
 		if pkgAlias == "" {
@@ -446,7 +447,7 @@ func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
 						continue
 					}
 					alias := filepath.Base(importPath)
-					newAlias := aliasImport(alias)
+					newAlias := utils.AliasImport(alias)
 					if newAlias == "" {
 						alias = pkg
 					} else if newAlias != "" && newAlias != alias {
@@ -478,16 +479,4 @@ func findModuleRoot(path string) (string, error) {
 		}
 		path = parent
 	}
-}
-
-func aliasImport(importPath string) string {
-	last := path.Base(importPath)
-	alias := strings.ReplaceAll(last, "-", "_")
-	if len(alias) > 0 && alias[0] >= '0' && alias[0] <= '9' {
-		alias = "_" + alias
-	}
-	if alias == last {
-		return ""
-	}
-	return alias
 }

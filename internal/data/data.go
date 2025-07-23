@@ -54,6 +54,7 @@ type TypeNode struct {
 	Kind             Kind
 	IsComparable     bool   // Can we compare with == ?
 	PkgPath          string // Package path for the type
+	PkgAlias         string
 	SamePkgAsReferer bool
 	Fields           []*TypeNode // Slice of embeded fields
 	Len              int         // array length

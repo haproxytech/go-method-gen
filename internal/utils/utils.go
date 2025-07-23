@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"log"
+	"path"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -96,4 +97,16 @@ func HasDiffFor(typ reflect.Type) bool {
 func ExtractPkg(fullpkg string) string {
 	pkg := strings.Split(fullpkg, "/")
 	return pkg[len(pkg)-1]
+}
+
+func AliasImport(importPath string) string {
+	last := path.Base(importPath)
+	alias := strings.ReplaceAll(last, "-", "_")
+	if len(alias) > 0 && alias[0] >= '0' && alias[0] <= '9' {
+		alias = "_" + alias
+	}
+	if alias == last {
+		return ""
+	}
+	return alias
 }
