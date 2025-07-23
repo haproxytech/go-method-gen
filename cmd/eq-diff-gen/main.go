@@ -8,12 +8,10 @@ import (
 	"go/token"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
-
-	"github.com/haproxytech/eqdiff/internal/common"
-	yaml "gopkg.in/yaml.v3"
 )
 
 const generatedMainTemplate = `
@@ -23,7 +21,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	{{range .Imports}}"{{.}}"
+	{{range $imp, $alias  := .ImportAliasMap}}{{if ne $alias ""}}{{$alias}} "{{ $imp }}"{{else}}"{{ $imp }}"{{end}}
 	{{end}}
 	"github.com/haproxytech/eqdiff/pkg/eqdiff"
 )
@@ -46,11 +44,12 @@ func main() {
 `
 
 type TemplateData struct {
-	Imports       []string
-	TypeSpecs     []string
-	OutputDir     string
-	OverridesPath string
-	HeaderPath    string
+	// Map alias -> importPath; alias="" means no alias
+	ImportAliasMap map[string]string
+	TypeSpecs      []string
+	OutputDir      string
+	OverridesPath  string
+	HeaderPath     string
 }
 
 func main() {
@@ -163,19 +162,24 @@ func main() {
 	var typeSpecs []string
 	var importsWithVersion []string
 
-	var imports []string
+	// map import path -> alias (alias = "" means no alias)
+	importAliasMap := make(map[string]string)
 	importSet := make(map[string]bool)
 
 	if seenScan {
 		importsScan, specs, err := scanTypes(scanPath, moduleName)
-		imports = importsScan
 		check(err)
-		for i := range imports {
-			importSet[imports[i]] = true
+		for _, imp := range importsScan {
+			importSet[imp] = true
 		}
-		typeSpecs = append([]string{}, specs...)
 
-		importsWithVersion = imports
+		importsWithVersion = importsScan
+		typeSpecs = append(typeSpecs, specs...)
+
+		// Fill alias map for scanned imports:
+		for _, imp := range importsScan {
+			importAliasMap[imp] = aliasImport(filepath.Base(imp))
+		}
 
 		if debug {
 			fmt.Println("• Scanned types:")
@@ -183,12 +187,18 @@ func main() {
 				fmt.Printf("  - %s\n", t)
 			}
 			fmt.Println("• From imports:")
-			for _, imp := range imports {
-				fmt.Printf("  - %s\n", imp)
+			for _, imp := range importsScan {
+				a := importAliasMap[imp]
+				if a != "" {
+					fmt.Printf("  - %s (alias %s)\n", imp, a)
+				} else {
+					fmt.Printf("  - %s\n", imp)
+				}
 			}
 		}
 	}
 
+	// Add imports and types from typeArgs:
 	for _, full := range typeArgs {
 		var version string
 		at := strings.LastIndex(full, "@")
@@ -209,20 +219,30 @@ func main() {
 		typeName := full[dot+1:]
 
 		if !importSet[importPath] {
-			imports = append(imports, importPath)
-			importsWithVersion = append(importsWithVersion, importWithVersion)
 			importSet[importPath] = true
+			importsWithVersion = append(importsWithVersion, importWithVersion)
+
+			// Alias detection for dash in package base name
+			importAliasMap[importPath] = aliasImport(filepath.Base(importPath))
 		}
-		pkgAlias := filepath.Base(importPath)
+		pkgAlias := importAliasMap[importPath]
+		if pkgAlias == "" {
+			pkgAlias = filepath.Base(importPath)
+		}
 		typeSpecs = append(typeSpecs, fmt.Sprintf("%s.%s", pkgAlias, typeName))
 	}
 
 	absOutputDir := filepath.Join(cwd(), outputDir)
 	clearOutputDir(absOutputDir, debug)
+
 	if debug {
-		fmt.Println("• Final import paths:")
-		for _, imp := range imports {
-			fmt.Println("  -", imp)
+		fmt.Println("• Final import alias map:")
+		for imp, alias := range importAliasMap {
+			if alias != "" {
+				fmt.Printf("  %s as %s\n", imp, alias)
+			} else {
+				fmt.Printf("  %s\n", imp)
+			}
 		}
 		fmt.Println("• Type specs:")
 		for _, t := range typeSpecs {
@@ -231,11 +251,11 @@ func main() {
 	}
 
 	data := TemplateData{
-		Imports:       imports,
-		TypeSpecs:     typeSpecs,
-		OutputDir:     absOutputDir,
-		OverridesPath: overridesPath,
-		HeaderPath:    headerPath,
+		ImportAliasMap: importAliasMap,
+		TypeSpecs:      typeSpecs,
+		OutputDir:      absOutputDir,
+		OverridesPath:  overridesPath,
+		HeaderPath:     headerPath,
 	}
 
 	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
@@ -271,7 +291,6 @@ func cwd() string {
 }
 
 // generateGoModWithReplaces creates a temporary go.mod file with optional replace directives.
-// Used to redirect module paths for local development or testing.
 func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces []string, debug bool) {
 	goModPath := filepath.Join(tmpDir, "go.mod")
 	goModContent := "module eqdiff-tmp\n\ngo 1.21\n"
@@ -381,31 +400,8 @@ func clearOutputDir(path string, debug bool) {
 	}
 }
 
-// GetTypeAndPackage splits a fully qualified type string into import path and type name.
-// e.g., "github.com/foo/bar.TypeName" → ("github.com/foo/bar", "TypeName")
-func GetTypeAndPackage(packagedType string) (string, string) {
-	dot := strings.LastIndex(packagedType, ".")
-	if dot == -1 || dot == len(packagedType)-1 {
-		exit(fmt.Sprintf("Invalid type format: %s (expected importpath.TypeName)", packagedType))
-	}
-	return packagedType[:dot], packagedType[dot+1:]
-}
-
-// LoadOverridesYaml reads and parses a YAML file that defines override functions.
-func LoadOverridesYaml(path string) (map[string]common.OverrideFuncs, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read overrides file: %w", err)
-	}
-	var parsed map[string]common.OverrideFuncs
-	if err := yaml.Unmarshal(data, &parsed); err != nil {
-		return nil, fmt.Errorf("failed to parse overrides YAML: %w", err)
-	}
-	return parsed, nil
-}
-
 // scanTypes parses all Go source files in the given directory (scanPath),
-// and returns the import path and a list of discovered type names in that package.
+// and returns the import paths and a list of discovered type names in that package.
 // It uses the moduleName and the relative path from the module root to compute the full import path.
 func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
 	absScanPath, err := filepath.Abs(scanPath)
@@ -438,6 +434,7 @@ func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
 	var typeSpecs []string
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Files {
+			pkg := file.Name.Name
 			for _, decl := range file.Decls {
 				genDecl, ok := decl.(*ast.GenDecl)
 				if !ok || genDecl.Tok != token.TYPE {
@@ -448,7 +445,14 @@ func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
 					if !ok {
 						continue
 					}
-					typeSpecs = append(typeSpecs, fmt.Sprintf("%s.%s", filepath.Base(importPath), typeSpec.Name.Name))
+					alias := filepath.Base(importPath)
+					newAlias := aliasImport(alias)
+					if newAlias == "" {
+						alias = pkg
+					} else if newAlias != "" && newAlias != alias {
+						alias = newAlias
+					}
+					typeSpecs = append(typeSpecs, fmt.Sprintf("%s.%s", alias, typeSpec.Name.Name))
 				}
 			}
 		}
@@ -474,4 +478,16 @@ func findModuleRoot(path string) (string, error) {
 		}
 		path = parent
 	}
+}
+
+func aliasImport(importPath string) string {
+	last := path.Base(importPath)
+	alias := strings.ReplaceAll(last, "-", "_")
+	if len(alias) > 0 && alias[0] >= '0' && alias[0] <= '9' {
+		alias = "_" + alias
+	}
+	if alias == last {
+		return ""
+	}
+	return alias
 }
