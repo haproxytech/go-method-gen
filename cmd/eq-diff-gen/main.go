@@ -168,8 +168,9 @@ func main() {
 	importSet := make(map[string]bool)
 
 	if seenScan {
-		importsScan, specs, err := scanTypes(scanPath, moduleName)
+		importsScan, specs, modRoot, err := scanTypes(scanPath, moduleName)
 		check(err)
+		extraReplaces = append(extraReplaces, moduleName+":"+modRoot)
 		for _, imp := range importsScan {
 			importSet[imp] = true
 		}
@@ -402,22 +403,22 @@ func clearOutputDir(path string, debug bool) {
 }
 
 // scanTypes parses all Go source files in the given directory (scanPath),
-// and returns the import paths and a list of discovered type names in that package.
+// and returns the import paths and a list of discovered type names in that package and the module root.
 // It uses the moduleName and the relative path from the module root to compute the full import path.
-func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
+func scanTypes(scanPath, moduleName string) ([]string, []string, string, error) {
 	absScanPath, err := filepath.Abs(scanPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
 
 	modRoot, err := findModuleRoot(absScanPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not find module root: %w", err)
+		return nil, nil, modRoot, fmt.Errorf("could not find module root: %w", err)
 	}
 
 	relPath, err := filepath.Rel(modRoot, absScanPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("cannot determine path relative to module root: %w", err)
+		return nil, nil, modRoot, fmt.Errorf("cannot determine path relative to module root: %w", err)
 	}
 
 	// Assemble the full import path for the scanned directory
@@ -429,7 +430,7 @@ func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
 	fset := token.NewFileSet()
 	pkgs, err := parser.ParseDir(fset, scanPath, nil, 0)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, modRoot, err
 	}
 
 	var typeSpecs []string
@@ -459,7 +460,7 @@ func scanTypes(scanPath, moduleName string) ([]string, []string, error) {
 		}
 	}
 
-	return []string{importPath}, typeSpecs, nil
+	return []string{importPath}, typeSpecs, modRoot, nil
 }
 
 // findModuleRoot traverses parent directories upwards to locate the nearest go.mod file.
