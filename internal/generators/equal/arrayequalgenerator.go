@@ -1,6 +1,7 @@
 package equal
 
 import (
+	"strings"
 	"text/template"
 
 	"github.com/haproxytech/eqdiff/internal/data"
@@ -40,6 +41,7 @@ func EqualGeneratorDefinedArray(node *data.TypeNode, ctx *data.Ctx, equalCtx Equ
 		RightSideComparison:        "y[i]",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 		DefinedType:                true,
 		Imports:                    node.Imports,

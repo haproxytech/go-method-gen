@@ -18,6 +18,7 @@ func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 		RightSideComparison:        "obj",
 		DiffFuncName:               "Diff",
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 	}
 

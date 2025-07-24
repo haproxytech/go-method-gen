@@ -30,7 +30,6 @@ func WriteEqualFiles(dir, file string, files map[string]map[string]string, ctx d
 
 	if ctx.ObjectKind == data.KindToString(data.Struct) || ctx.DefinedType {
 		file = filepath.Join(dir, ctx.PkgPath, strings.ToLower(ctx.Type)+"_equal_generated.go")
-		pathParts := strings.Split(ctx.PkgPath, "/")
 		args := map[string]string{
 			"LeftSideComparison":  ctx.LeftSideComparison,
 			"RightSideComparison": ctx.RightSideComparison,
@@ -51,7 +50,7 @@ func WriteEqualFiles(dir, file string, files map[string]map[string]string, ctx d
 			importsClause = "import (\n" + imports.String() + ")"
 		}
 		files[file] = map[string]string{
-			"Package": "package " + pathParts[len(pathParts)-1],
+			"Package": "package " + ctx.Pkg,
 			"Imports": importsClause,
 			"Equal":   contents.String(),
 		}

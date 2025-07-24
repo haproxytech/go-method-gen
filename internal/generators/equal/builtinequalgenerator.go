@@ -36,6 +36,7 @@ func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, equalCtx E
 		RightSideComparison:        "y",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 		DefinedType:                true,
 		Imports:                    node.Imports,
@@ -48,6 +49,7 @@ func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, equalCtx E
 		LeftSideComparison:         "x",
 		RightSideComparison:        "y",
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 		EqualFuncName:              equalFuncName,
 	}

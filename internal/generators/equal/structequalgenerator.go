@@ -18,6 +18,7 @@ func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx)
 		RightSideComparison:        "obj",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)

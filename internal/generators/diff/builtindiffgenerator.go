@@ -39,6 +39,7 @@ func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 		RightSideComparison:        "y",
 		DiffFuncName:               "Diff",
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 		DefinedType:                true,
 		DiffImplementation:         diffFuncName + "(x, y)",
@@ -57,6 +58,7 @@ func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 		RightSideComparison:        "y",
 		DiffFuncName:               diffFuncName,
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 		Imports:                    node.Imports,
 	}

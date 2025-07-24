@@ -1,6 +1,8 @@
 package diff
 
 import (
+	"strings"
+
 	"github.com/haproxytech/eqdiff/internal/data"
 	"github.com/haproxytech/eqdiff/internal/utils"
 )
@@ -24,6 +26,7 @@ func Generate(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 			LeftSideComparison:         "x",
 			RightSideComparison:        "y",
 			PkgPath:                    node.PkgPath,
+			Pkg:                        strings.Split(node.PackagedType, ".")[0],
 			Type:                       node.Type,
 		}
 		ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)

@@ -1,6 +1,7 @@
 package equal
 
 import (
+	"strings"
 	"text/template"
 
 	"github.com/haproxytech/eqdiff/internal/data"
@@ -47,6 +48,7 @@ func EqualGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, equalCtx Equ
 		Imports:                    node.Imports,
 		Type:                       node.Type,
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	Generate(subNode, ctxEqual, equalCtx)
@@ -69,6 +71,7 @@ func EqualGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, equalCtx
 		RightSideComparison:        "y",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 		Type:                       node.Type,
 		DefinedType:                true,
 		Imports:                    node.Imports,

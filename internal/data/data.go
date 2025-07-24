@@ -76,6 +76,7 @@ func (en *TypeNode) IsForField() bool {
 
 type Ctx struct {
 	PkgPath                                 string
+	Pkg                                     string
 	ObjectNameToHaveGeneration              string
 	LeftSideComparison, RightSideComparison string
 	EqualImplementation                     string

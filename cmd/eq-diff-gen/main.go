@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	{{range $imp, $alias  := .ImportAliasMap}}{{if ne $alias ""}}{{$alias}} "{{ $imp }}"{{else}}"{{ $imp }}"{{end}}
+	{{range $imp, $alias  := .Imports}}{{if ne $alias ""}}{{$alias}} "{{ $imp }}"{{else}}"{{ $imp }}"{{end}}
 	{{end}}
 	"github.com/haproxytech/eqdiff/pkg/eqdiff"
 )
@@ -46,11 +46,11 @@ func main() {
 
 type TemplateData struct {
 	// Map alias -> importPath; alias="" means no alias
-	ImportAliasMap map[string]string
-	TypeSpecs      []string
-	OutputDir      string
-	OverridesPath  string
-	HeaderPath     string
+	Imports       map[string]string
+	TypeSpecs     []string
+	OutputDir     string
+	OverridesPath string
+	HeaderPath    string
 }
 
 func main() {
@@ -164,7 +164,7 @@ func main() {
 	var importsWithVersion []string
 
 	// map import path -> alias (alias = "" means no alias)
-	importAliasMap := make(map[string]string)
+	imports := make(map[string]string)
 	importSet := make(map[string]bool)
 
 	if seenScan {
@@ -179,7 +179,7 @@ func main() {
 
 		// Fill alias map for scanned imports:
 		for _, imp := range importsScan {
-			importAliasMap[imp] = utils.AliasImport(filepath.Base(imp))
+			imports[imp] = utils.AliasImport(filepath.Base(imp))
 		}
 
 		if debug {
@@ -189,7 +189,7 @@ func main() {
 			}
 			fmt.Println("• From imports:")
 			for _, imp := range importsScan {
-				a := importAliasMap[imp]
+				a := imports[imp]
 				if a != "" {
 					fmt.Printf("  - %s (alias %s)\n", imp, a)
 				} else {
@@ -224,9 +224,9 @@ func main() {
 			importsWithVersion = append(importsWithVersion, importWithVersion)
 
 			// Alias detection for dash in package base name
-			importAliasMap[importPath] = utils.AliasImport(filepath.Base(importPath))
+			imports[importPath] = utils.AliasImport(filepath.Base(importPath))
 		}
-		pkgAlias := importAliasMap[importPath]
+		pkgAlias := imports[importPath]
 		if pkgAlias == "" {
 			pkgAlias = filepath.Base(importPath)
 		}
@@ -238,7 +238,7 @@ func main() {
 
 	if debug {
 		fmt.Println("• Final import alias map:")
-		for imp, alias := range importAliasMap {
+		for imp, alias := range imports {
 			if alias != "" {
 				fmt.Printf("  %s as %s\n", imp, alias)
 			} else {
@@ -252,11 +252,11 @@ func main() {
 	}
 
 	data := TemplateData{
-		ImportAliasMap: importAliasMap,
-		TypeSpecs:      typeSpecs,
-		OutputDir:      absOutputDir,
-		OverridesPath:  overridesPath,
-		HeaderPath:     headerPath,
+		Imports:       imports,
+		TypeSpecs:     typeSpecs,
+		OutputDir:     absOutputDir,
+		OverridesPath: overridesPath,
+		HeaderPath:    headerPath,
 	}
 
 	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")

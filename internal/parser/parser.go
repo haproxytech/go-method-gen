@@ -203,9 +203,13 @@ func DefaultParsing(node *data.TypeNode, typ reflect.Type) {
 	node.IsComparable = typ.Comparable()
 	node.HasEqual = utils.HasEqualFor(typ)
 	node.HasDiff = utils.HasDiffFor(typ)
-	node.PkgAlias = utils.AliasImport(node.PkgPath)
+	pkgAndType := strings.SplitN(node.PackagedType, ".", 2)
+	pkg := pkgAndType[0]
+	if PkgAlias := utils.AliasPkg(pkg); PkgAlias != "" {
+		node.PkgAlias = PkgAlias
+	}
+	//node.PkgAlias = utils.AliasPkg(node.PkgPath)
 	if node.PkgAlias != "" {
-		pkgAndType := strings.SplitN(node.PackagedType, ".", 2)
 		typName := pkgAndType[1]
 		node.PackagedType = fmt.Sprintf("%s.%s", node.PkgAlias, typName)
 	}

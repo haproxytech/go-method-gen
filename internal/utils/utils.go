@@ -99,14 +99,17 @@ func ExtractPkg(fullpkg string) string {
 	return pkg[len(pkg)-1]
 }
 
-func AliasImport(importPath string) string {
-	last := path.Base(importPath)
-	alias := strings.ReplaceAll(last, "-", "_")
+func AliasPkg(pkg string) string {
+	alias := strings.ReplaceAll(pkg, "-", "_")
 	if len(alias) > 0 && alias[0] >= '0' && alias[0] <= '9' {
 		alias = "_" + alias
 	}
-	if alias == last {
+	if alias == pkg {
 		return ""
 	}
 	return alias
+}
+
+func AliasImport(importPath string) string {
+	return AliasPkg(path.Base(importPath))
 }
