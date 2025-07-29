@@ -6,13 +6,17 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
+	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/haproxytech/eqdiff/internal/utils"
+	"golang.org/x/tools/go/packages"
 )
 
 const generatedMainTemplate = `
@@ -22,16 +26,25 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	{{range $imp, $alias  := .Imports}}{{if ne $alias ""}}{{$alias}} "{{ $imp }}"{{else}}"{{ $imp }}"{{end}}
-	{{end}}
+	{{range $imp, $alias := .Imports}}{{if ne $alias ""}}
+	{{$alias}} "{{$imp}}"{{else}}
+	"{{$imp}}"{{end}}{{end}}
 	"github.com/haproxytech/eqdiff/pkg/eqdiff"
 )
 
 func main() {
+	{{range $_, $typeSpec := .TypeSpecs}}{{if $typeSpec.IsAliasType}}
+	var {{$typeSpec.AliasTypeVar}} {{$typeSpec.PackagedType}}
+	{{end}}{{end}}
+
 	types := []reflect.Type{
-		{{range .TypeSpecs}}reflect.TypeOf({{.}}{}),
-		{{end}}
+		{{range $_, $typeSpec := .TypeSpecs}}{{if $typeSpec.IsAliasType}}
+		reflect.TypeOf({{$typeSpec.AliasTypeVar}}),
+		{{else}}
+		reflect.TypeOf({{$typeSpec.PackagedType}}{}),
+		{{end}}{{end}}
 	}
+
 	err := eqdiff.Generate(types, eqdiff.Options{
 		OutputDir: {{printf "%q" .OutputDir}},
 		OverridesFile: {{printf "%q" .OverridesPath}},
@@ -45,12 +58,23 @@ func main() {
 `
 
 type TemplateData struct {
-	// Map alias -> importPath; alias="" means no alias
 	Imports       map[string]string
-	TypeSpecs     []string
+	TypeSpecs     map[string]TypeSpec
 	OutputDir     string
 	OverridesPath string
 	HeaderPath    string
+}
+
+type TypeSpec struct {
+	FullName     string // github.com/haproxytech/client-native/v5/models.SpoeScope@v5.1.15
+	Version      string // v5.1.15
+	Package      string // github.com/haproxytech/client-native/v5/models
+	PackagedType string // models.SpoeScope
+	Type         string // SpoeScope
+	ImportName   string // models
+	PackageAlias string // models, or alias if invalid package name
+	IsAliasType  bool   // true if alias
+	AliasTypeVar string
 }
 
 func main() {
@@ -160,7 +184,9 @@ func main() {
 		fmt.Printf("\u2022 Detected Go module: %s\n", moduleName)
 	}
 
-	var typeSpecs []string
+	//typeSpecs := map[string]string{}
+	typeSpecs := map[string]TypeSpec{}
+	//definedTypeVariables := map[string]string{}
 	var importsWithVersion []string
 
 	// map import path -> alias (alias = "" means no alias)
@@ -176,7 +202,20 @@ func main() {
 		}
 
 		importsWithVersion = importsScan
-		typeSpecs = append(typeSpecs, specs...)
+		for _, spec := range specs {
+			//typeSpecs[spec] = spec + "{}"
+			typeSpecs[spec.FullName] = spec
+			if !importSet[spec.Package] {
+				importSet[spec.Package] = true
+				pkg := spec.Package
+				if spec.Version != "" {
+					pkg += "@" + spec.Version
+				}
+				importsWithVersion = append(importsWithVersion, pkg)
+				// Alias detection for dash in package base name
+				imports[spec.Package] = spec.PackageAlias
+			}
+		}
 
 		// Fill alias map for scanned imports:
 		for _, imp := range importsScan {
@@ -200,39 +239,63 @@ func main() {
 		}
 	}
 
-	// Add imports and types from typeArgs:
 	for _, full := range typeArgs {
-		var version string
-		at := strings.LastIndex(full, "@")
-		if at != -1 {
-			version = full[at+1:]
-			full = full[:at]
+		typeSpec, err := parseTypeSpec(full)
+		if err != nil {
+			exit(err.Error())
 		}
-
-		dot := strings.LastIndex(full, ".")
-		if dot == -1 || dot == len(full)-1 {
-			exit(fmt.Sprintf("Invalid type format: %s (expected importpath.TypeName)", full))
-		}
-		importPath := full[:dot]
-		importWithVersion := importPath
-		if version != "" {
-			importWithVersion += "@" + version
-		}
-		typeName := full[dot+1:]
-
-		if !importSet[importPath] {
-			importSet[importPath] = true
-			importsWithVersion = append(importsWithVersion, importWithVersion)
-
+		typeSpecs[full] = typeSpec
+		if !importSet[typeSpec.Package] {
+			importSet[typeSpec.Package] = true
+			pkg := typeSpec.Package
+			if typeSpec.Version != "" {
+				pkg += "@" + typeSpec.Version
+			}
+			importsWithVersion = append(importsWithVersion, pkg)
 			// Alias detection for dash in package base name
-			imports[importPath] = utils.AliasImport(filepath.Base(importPath))
+			imports[typeSpec.Package] = typeSpec.PackageAlias
 		}
-		pkgAlias := imports[importPath]
-		if pkgAlias == "" {
-			pkgAlias = filepath.Base(importPath)
-		}
-		typeSpecs = append(typeSpecs, fmt.Sprintf("%s.%s", pkgAlias, typeName))
 	}
+
+	// Add imports and types from typeArgs:
+	// for _, full := range typeArgs {
+	// 	typeSpec, err := parseTypeSpec(full)
+	// 	if err != nil {
+	// 		exit(err.Error())
+	// 	}
+	// 	var version string
+	// 	at := strings.LastIndex(full, "@")
+	// 	if at != -1 {
+	// 		version = full[at+1:]
+	// 		full = full[:at]
+	// 	}
+	// 	typeSpec.Version = version
+	// 	dot := strings.LastIndex(full, ".")
+	// 	if dot == -1 || dot == len(full)-1 {
+	// 		exit(fmt.Sprintf("Invalid type format: %s (expected importpath.TypeName)", full))
+	// 	}
+	// 	importPath := full[:dot]
+	// 	typeSpec.Package = importPath
+	// 	importWithVersion := importPath
+	// 	if version != "" {
+	// 		importWithVersion += "@" + version
+	// 	}
+	// 	typeSpec.PackagedType = full[dot+1:]
+
+	// 	if !importSet[importPath] {
+	// 		importSet[importPath] = true
+	// 		importsWithVersion = append(importsWithVersion, importWithVersion)
+
+	// 		// Alias detection for dash in package base name
+	// 		imports[importPath] = utils.AliasImport(filepath.Base(importPath))
+	// 	}
+	// 	pkgAlias := imports[importPath]
+	// 	if pkgAlias == "" {
+	// 		pkgAlias = filepath.Base(importPath)
+	// 	}
+	// 	//typeSpecs[originalFull] = fmt.Sprintf("%s.%s{}", pkgAlias, typeName)
+	// 	//typeSpecs = append(typeSpecs,fmt.Sprintf("%s.%s", pkgAlias, typeName))
+	// }
 
 	absOutputDir := filepath.Join(cwd(), outputDir)
 	clearOutputDir(absOutputDir, debug)
@@ -247,7 +310,7 @@ func main() {
 			}
 		}
 		fmt.Println("• Type specs:")
-		for _, t := range typeSpecs {
+		for t := range typeSpecs {
 			fmt.Println("  -", t)
 		}
 	}
@@ -270,10 +333,20 @@ func main() {
 		fmt.Println("Temporary files kept at:", tmpDir)
 	}
 
-	generateMainGo(tmpDir, data, debug)
-
 	generateGoModWithReplaces(tmpDir, replaceEqdiffPath, extraReplaces, debug)
 	addGoGetDeps(tmpDir, importsWithVersion, debug)
+
+	// for _, full := range typeArgs {
+	// 	isDefinedAlias, err := isDefinedAlias(full)
+	// 	if err != nil {
+	// 		exit(err.Error())
+	// 	}
+	// 	if isDefinedAlias {
+	// 		delete(data.TypeSpecs, full)
+	// 	}
+	// 	fmt.Println("isDefinedAlias:", isDefinedAlias)
+	// }
+	generateMainGo(tmpDir, data, debug)
 
 	cmd := exec.Command("go", "run", ".")
 	cmd.Dir = tmpDir
@@ -405,7 +478,7 @@ func clearOutputDir(path string, debug bool) {
 // scanTypes parses all Go source files in the given directory (scanPath),
 // and returns the import paths and a list of discovered type names in that package and the module root.
 // It uses the moduleName and the relative path from the module root to compute the full import path.
-func scanTypes(scanPath, moduleName string) ([]string, []string, string, error) {
+func scanTypes(scanPath, moduleName string) ([]string, []TypeSpec, string, error) {
 	absScanPath, err := filepath.Abs(scanPath)
 	if err != nil {
 		return nil, nil, "", err
@@ -421,7 +494,6 @@ func scanTypes(scanPath, moduleName string) ([]string, []string, string, error) 
 		return nil, nil, modRoot, fmt.Errorf("cannot determine path relative to module root: %w", err)
 	}
 
-	// Assemble the full import path for the scanned directory
 	importPath := moduleName
 	if relPath != "." {
 		importPath = moduleName + "/" + filepath.ToSlash(relPath)
@@ -433,28 +505,46 @@ func scanTypes(scanPath, moduleName string) ([]string, []string, string, error) 
 		return nil, nil, modRoot, err
 	}
 
-	var typeSpecs []string
+	var typeSpecs []TypeSpec
+
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Files {
-			pkg := file.Name.Name
+			packageName := file.Name.Name
 			for _, decl := range file.Decls {
 				genDecl, ok := decl.(*ast.GenDecl)
 				if !ok || genDecl.Tok != token.TYPE {
 					continue
 				}
 				for _, spec := range genDecl.Specs {
-					typeSpec, ok := spec.(*ast.TypeSpec)
+					typeSpecNode, ok := spec.(*ast.TypeSpec)
 					if !ok {
 						continue
 					}
-					alias := filepath.Base(importPath)
-					newAlias := utils.AliasImport(alias)
-					if newAlias == "" {
-						alias = pkg
-					} else if newAlias != "" && newAlias != alias {
-						alias = newAlias
+
+					typeName := typeSpecNode.Name.Name
+					packagedType := fmt.Sprintf("%s.%s", packageName, typeName)
+					fullName := fmt.Sprintf("%s.%s", importPath, typeName)
+					dirName := filepath.Base(importPath)
+					alias := utils.AliasImport(dirName)
+
+					isAlias, _ := isDefinedAlias(fmt.Sprintf("%s.%s", importPath, typeName))
+					var aliasVar string
+					if isAlias {
+						aliasVar = utils.GenerateAliasVarName(packagedType) // exemple: models.Scope => modelsScope
 					}
-					typeSpecs = append(typeSpecs, fmt.Sprintf("%s.%s", alias, typeSpec.Name.Name))
+					typeSpec := TypeSpec{
+						FullName:     fullName,
+						Version:      "",
+						Package:      importPath,
+						PackagedType: packagedType,
+						Type:         typeName,
+						ImportName:   packageName,
+						PackageAlias: alias,
+						IsAliasType:  isAlias,
+						AliasTypeVar: aliasVar,
+					}
+					typeSpecs = append(typeSpecs, typeSpec)
+					log.Printf("typeSpec : %+v", typeSpec)
 				}
 			}
 		}
@@ -480,4 +570,114 @@ func findModuleRoot(path string) (string, error) {
 		}
 		path = parent
 	}
+}
+
+func isDefinedAlias(full string) (bool, error) {
+	items := strings.SplitN(full, "@", 2)
+	packagedType := items[0]
+	version := ""
+	if len(items) == 2 {
+		version = items[1]
+	}
+	lastDot := strings.LastIndex(packagedType, ".")
+	if lastDot == -1 {
+		return false, fmt.Errorf("invalid type path: %s", full)
+	}
+	rawImportPath := packagedType[:lastDot]
+	typeName := packagedType[lastDot+1:]
+
+	// Gérer le suffixe @version
+	importPath := rawImportPath
+
+	// Déterminer le module à go get (chemin sans le dernier composant)
+	modulePath := path.Dir(importPath)
+	goGetArg := modulePath
+	if version != "" {
+		goGetArg += "@" + version
+	}
+
+	// Toujours exécuter un go get pour s'assurer que le module est dans go.mod
+	cmd := exec.Command("go", "get", goGetArg)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return false, fmt.Errorf("failed to go get module: %w", err)
+	}
+
+	// Charger le package
+	cfg := &packages.Config{
+		Mode: packages.NeedTypes | packages.NeedTypesInfo | packages.NeedImports | packages.NeedName,
+	}
+	pkgs, err := packages.Load(cfg, importPath)
+	if err != nil {
+		return false, err
+	}
+	if packages.PrintErrors(pkgs) > 0 {
+		return false, fmt.Errorf("failed to load package %s", importPath)
+	}
+	if len(pkgs) == 0 {
+		return false, fmt.Errorf("no packages found for %s", importPath)
+	}
+	pkg := pkgs[0]
+
+	obj := pkg.Types.Scope().Lookup(typeName)
+	if obj == nil {
+		return false, fmt.Errorf("type %s not found in %s", typeName, importPath)
+	}
+	typeObj, ok := obj.(*types.TypeName)
+	if !ok {
+		return false, fmt.Errorf("%s is not a named type", typeName)
+	}
+	named, ok := typeObj.Type().(*types.Named)
+	if !ok {
+		return false, fmt.Errorf("%s is not a named type", typeName)
+	}
+
+	underlying := named.Underlying()
+	if _, ok := underlying.(*types.Struct); ok {
+		return false, nil // struct complet
+	}
+	return true, nil // alias (vers un primitif ou autre)
+}
+
+func parseTypeSpec(full string) (TypeSpec, error) {
+	var version string
+	var base string
+
+	parts := strings.SplitN(full, "@", 2)
+	base = parts[0]
+	if len(parts) == 2 {
+		version = parts[1]
+	}
+
+	lastDot := strings.LastIndex(base, ".")
+	if lastDot == -1 {
+		return TypeSpec{}, fmt.Errorf("invalid type path: %s", full)
+	}
+
+	pkgPath := base[:lastDot]
+	typeName := base[lastDot+1:]
+	importName := path.Base(pkgPath)
+	alias := utils.AliasPkg(importName)
+
+	isAlias, err := isDefinedAlias(full)
+	if err != nil {
+		return TypeSpec{}, fmt.Errorf("could not determine if type is defined alias: %w", err)
+	}
+	var aliasVar string
+	if isAlias {
+		aliasVar = utils.GenerateAliasVarName(importName + "." + typeName)
+	}
+
+	return TypeSpec{
+		FullName:     full,
+		Version:      version,
+		Package:      pkgPath,
+		PackagedType: importName + "." + typeName,
+		Type:         typeName,
+		ImportName:   importName,
+		PackageAlias: alias,
+		IsAliasType:  isAlias,
+		AliasTypeVar: aliasVar,
+	}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 func Fqn(packagedName string) string {
@@ -112,4 +113,16 @@ func AliasPkg(pkg string) string {
 
 func AliasImport(importPath string) string {
 	return AliasPkg(path.Base(importPath))
+}
+
+// GenerateAliasVarName transforme un nom packagé comme "models.Backend" ou "v1.Backend"
+// en "modelsBackend" ou "v1Backend" (valide pour une variable Go).
+func GenerateAliasVarName(packagedType string) string {
+	var b strings.Builder
+	for _, r := range packagedType {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
