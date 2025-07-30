@@ -53,7 +53,7 @@ func (rec StructA) Diff(obj StructA) map[string][]interface{} {
 ## Installation
 
 ```bash
-go install github.com/<TBD>/eq-diff-gen@latest
+go install github.com/<TBD>/eq-diff-gen/cmd/eq-diff-gen/@latest
 ```
 
 Or build from source:

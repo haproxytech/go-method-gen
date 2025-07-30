@@ -7,7 +7,6 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -167,13 +166,20 @@ func main() {
 		fmt.Printf("  - extraReplaces: %v\n", extraReplaces)
 	}
 
-	var moduleName string
+	var moduleName, absScanPath, modRoot, relPath string
 	if seenScan {
 		cmd := exec.Command("go", "list", "-m")
 		cmd.Dir = scanPath
 		out, err := cmd.Output()
 		check(err)
 		moduleName = strings.TrimSpace(string(out))
+		absScanPath, err = filepath.Abs(scanPath)
+		check(err)
+		modRoot, err = findModuleRoot(absScanPath)
+		check(err)
+		relPath, err = filepath.Rel(modRoot, absScanPath)
+		check(err)
+		extraReplaces = append(extraReplaces, moduleName+":"+modRoot)
 	} else {
 		modName, err := exec.Command("go", "list", "-m").Output()
 		check(err)
@@ -192,18 +198,65 @@ func main() {
 	// map import path -> alias (alias = "" means no alias)
 	imports := make(map[string]string)
 	importSet := make(map[string]bool)
+	modulesGoGet := make(map[string]struct{})
+	pkgsInfo := map[string][]*packages.Package{}
+	for _, full := range typeArgs {
+		typeSpec, err := parseTypeSpec(full, modulesGoGet, pkgsInfo)
+		if err != nil {
+			exit(err.Error())
+		}
+		typeSpecs[full] = typeSpec
+		if !importSet[typeSpec.Package] {
+			importSet[typeSpec.Package] = true
+			pkg := typeSpec.Package
+			if typeSpec.Version != "" {
+				pkg += "@" + typeSpec.Version
+			}
+			importsWithVersion = append(importsWithVersion, pkg)
+			// Alias detection for dash in package base name
+			imports[typeSpec.Package] = typeSpec.PackageAlias
+		}
+	}
+
+	absOutputDir := filepath.Join(cwd(), outputDir)
+	clearOutputDir(absOutputDir, debug)
+
+	if debug {
+		fmt.Println("• Final import alias map:")
+		for imp, alias := range imports {
+			if alias != "" {
+				fmt.Printf("  %s as %s\n", imp, alias)
+			} else {
+				fmt.Printf("  %s\n", imp)
+			}
+		}
+		fmt.Println("• Type specs:")
+		for t := range typeSpecs {
+			fmt.Println("  -", t)
+		}
+	}
+
+	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
+	err := os.MkdirAll(tmpDir, 0o755)
+	check(err)
+
+	if !keepTemp {
+		defer os.RemoveAll(tmpDir)
+	} else {
+		fmt.Println("Temporary files kept at:", tmpDir)
+	}
+
+	generateGoModWithReplaces(tmpDir, replaceEqdiffPath, extraReplaces, debug)
 
 	if seenScan {
-		importsScan, specs, modRoot, err := scanTypes(scanPath, moduleName)
+		importsScan, specs, err := scanTypes(scanPath, moduleName, relPath)
 		check(err)
-		extraReplaces = append(extraReplaces, moduleName+":"+modRoot)
 		for _, imp := range importsScan {
 			importSet[imp] = true
 		}
 
 		importsWithVersion = importsScan
 		for _, spec := range specs {
-			//typeSpecs[spec] = spec + "{}"
 			typeSpecs[spec.FullName] = spec
 			if !importSet[spec.Package] {
 				importSet[spec.Package] = true
@@ -225,7 +278,7 @@ func main() {
 		if debug {
 			fmt.Println("• Scanned types:")
 			for _, t := range typeSpecs {
-				fmt.Printf("  - %s\n", t)
+				fmt.Printf("  - %+v\n", t)
 			}
 			fmt.Println("• From imports:")
 			for _, imp := range importsScan {
@@ -238,83 +291,6 @@ func main() {
 			}
 		}
 	}
-
-	for _, full := range typeArgs {
-		typeSpec, err := parseTypeSpec(full)
-		if err != nil {
-			exit(err.Error())
-		}
-		typeSpecs[full] = typeSpec
-		if !importSet[typeSpec.Package] {
-			importSet[typeSpec.Package] = true
-			pkg := typeSpec.Package
-			if typeSpec.Version != "" {
-				pkg += "@" + typeSpec.Version
-			}
-			importsWithVersion = append(importsWithVersion, pkg)
-			// Alias detection for dash in package base name
-			imports[typeSpec.Package] = typeSpec.PackageAlias
-		}
-	}
-
-	// Add imports and types from typeArgs:
-	// for _, full := range typeArgs {
-	// 	typeSpec, err := parseTypeSpec(full)
-	// 	if err != nil {
-	// 		exit(err.Error())
-	// 	}
-	// 	var version string
-	// 	at := strings.LastIndex(full, "@")
-	// 	if at != -1 {
-	// 		version = full[at+1:]
-	// 		full = full[:at]
-	// 	}
-	// 	typeSpec.Version = version
-	// 	dot := strings.LastIndex(full, ".")
-	// 	if dot == -1 || dot == len(full)-1 {
-	// 		exit(fmt.Sprintf("Invalid type format: %s (expected importpath.TypeName)", full))
-	// 	}
-	// 	importPath := full[:dot]
-	// 	typeSpec.Package = importPath
-	// 	importWithVersion := importPath
-	// 	if version != "" {
-	// 		importWithVersion += "@" + version
-	// 	}
-	// 	typeSpec.PackagedType = full[dot+1:]
-
-	// 	if !importSet[importPath] {
-	// 		importSet[importPath] = true
-	// 		importsWithVersion = append(importsWithVersion, importWithVersion)
-
-	// 		// Alias detection for dash in package base name
-	// 		imports[importPath] = utils.AliasImport(filepath.Base(importPath))
-	// 	}
-	// 	pkgAlias := imports[importPath]
-	// 	if pkgAlias == "" {
-	// 		pkgAlias = filepath.Base(importPath)
-	// 	}
-	// 	//typeSpecs[originalFull] = fmt.Sprintf("%s.%s{}", pkgAlias, typeName)
-	// 	//typeSpecs = append(typeSpecs,fmt.Sprintf("%s.%s", pkgAlias, typeName))
-	// }
-
-	absOutputDir := filepath.Join(cwd(), outputDir)
-	clearOutputDir(absOutputDir, debug)
-
-	if debug {
-		fmt.Println("• Final import alias map:")
-		for imp, alias := range imports {
-			if alias != "" {
-				fmt.Printf("  %s as %s\n", imp, alias)
-			} else {
-				fmt.Printf("  %s\n", imp)
-			}
-		}
-		fmt.Println("• Type specs:")
-		for t := range typeSpecs {
-			fmt.Println("  -", t)
-		}
-	}
-
 	data := TemplateData{
 		Imports:       imports,
 		TypeSpecs:     typeSpecs,
@@ -322,31 +298,8 @@ func main() {
 		OverridesPath: overridesPath,
 		HeaderPath:    headerPath,
 	}
-
-	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
-	err := os.MkdirAll(tmpDir, 0o755)
-	check(err)
-
-	if !keepTemp {
-		defer os.RemoveAll(tmpDir)
-	} else {
-		fmt.Println("Temporary files kept at:", tmpDir)
-	}
-
-	generateGoModWithReplaces(tmpDir, replaceEqdiffPath, extraReplaces, debug)
-	addGoGetDeps(tmpDir, importsWithVersion, debug)
-
-	// for _, full := range typeArgs {
-	// 	isDefinedAlias, err := isDefinedAlias(full)
-	// 	if err != nil {
-	// 		exit(err.Error())
-	// 	}
-	// 	if isDefinedAlias {
-	// 		delete(data.TypeSpecs, full)
-	// 	}
-	// 	fmt.Println("isDefinedAlias:", isDefinedAlias)
-	// }
 	generateMainGo(tmpDir, data, debug)
+	addGoGetDeps(tmpDir, importsWithVersion, debug)
 
 	cmd := exec.Command("go", "run", ".")
 	cmd.Dir = tmpDir
@@ -478,79 +431,85 @@ func clearOutputDir(path string, debug bool) {
 // scanTypes parses all Go source files in the given directory (scanPath),
 // and returns the import paths and a list of discovered type names in that package and the module root.
 // It uses the moduleName and the relative path from the module root to compute the full import path.
-func scanTypes(scanPath, moduleName string) ([]string, []TypeSpec, string, error) {
-	absScanPath, err := filepath.Abs(scanPath)
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	modRoot, err := findModuleRoot(absScanPath)
-	if err != nil {
-		return nil, nil, modRoot, fmt.Errorf("could not find module root: %w", err)
-	}
-
-	relPath, err := filepath.Rel(modRoot, absScanPath)
-	if err != nil {
-		return nil, nil, modRoot, fmt.Errorf("cannot determine path relative to module root: %w", err)
-	}
-
+func scanTypes(scanPath, moduleName, relPath string) ([]string, []TypeSpec, error) {
 	importPath := moduleName
 	if relPath != "." {
 		importPath = moduleName + "/" + filepath.ToSlash(relPath)
 	}
 
 	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, scanPath, nil, 0)
+	pkgs, err := parser.ParseDir(fset, scanPath, nil, parser.AllErrors)
 	if err != nil {
-		return nil, nil, modRoot, err
+		return nil, nil, err
 	}
 
-	var typeSpecs []TypeSpec
+	allTypes := make(map[string]*ast.TypeSpec)
+	dependencies := make(map[string]map[string]bool)
 
+	// Collecte des types + dépendances
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Files {
-			packageName := file.Name.Name
 			for _, decl := range file.Decls {
 				genDecl, ok := decl.(*ast.GenDecl)
 				if !ok || genDecl.Tok != token.TYPE {
 					continue
 				}
 				for _, spec := range genDecl.Specs {
-					typeSpecNode, ok := spec.(*ast.TypeSpec)
+					typeSpec, ok := spec.(*ast.TypeSpec)
 					if !ok {
 						continue
 					}
+					typeName := typeSpec.Name.Name
+					allTypes[typeName] = typeSpec
 
-					typeName := typeSpecNode.Name.Name
-					packagedType := fmt.Sprintf("%s.%s", packageName, typeName)
-					fullName := fmt.Sprintf("%s.%s", importPath, typeName)
-					dirName := filepath.Base(importPath)
-					alias := utils.AliasImport(dirName)
-
-					isAlias, _ := isDefinedAlias(fmt.Sprintf("%s.%s", importPath, typeName))
-					var aliasVar string
-					if isAlias {
-						aliasVar = utils.GenerateAliasVarName(packagedType) // exemple: models.Scope => modelsScope
-					}
-					typeSpec := TypeSpec{
-						FullName:     fullName,
-						Version:      "",
-						Package:      importPath,
-						PackagedType: packagedType,
-						Type:         typeName,
-						ImportName:   packageName,
-						PackageAlias: alias,
-						IsAliasType:  isAlias,
-						AliasTypeVar: aliasVar,
-					}
-					typeSpecs = append(typeSpecs, typeSpec)
-					log.Printf("typeSpec : %+v", typeSpec)
+					dependencies[typeName] = make(map[string]bool)
+					findDepsInExpr(typeSpec.Type, dependencies[typeName])
 				}
 			}
 		}
 	}
 
-	return []string{importPath}, typeSpecs, modRoot, nil
+	// Recherche des types utilisés (dépendances)
+	used := make(map[string]bool)
+	for _, deps := range dependencies {
+		for dep := range deps {
+			used[dep] = true
+		}
+	}
+
+	var typeSpecs []TypeSpec
+	alias := filepath.Base(importPath)
+	pkgAlias := utils.AliasImport(alias)
+	if pkgAlias == "" {
+		pkgAlias = alias
+	}
+
+	modules := make(map[string]struct{})
+	pkgsInfo := map[string][]*packages.Package{}
+	for typeName := range allTypes {
+		if used[typeName] {
+			continue
+		}
+
+		fullName := fmt.Sprintf("%s.%s", importPath, typeName)
+		isAlias, _ := isDefinedAlias(fullName, modules, pkgsInfo)
+		packaged := fmt.Sprintf("%s.%s", pkgAlias, typeName)
+		varName := utils.GenerateAliasVarName(packaged)
+
+		typeSpecs = append(typeSpecs, TypeSpec{
+			FullName:     fullName,
+			Version:      "",
+			Package:      importPath,
+			PackagedType: packaged,
+			Type:         typeName,
+			ImportName:   alias,
+			PackageAlias: pkgAlias,
+			IsAliasType:  isAlias,
+			AliasTypeVar: varName,
+		})
+	}
+
+	return []string{importPath}, typeSpecs, nil
 }
 
 // findModuleRoot traverses parent directories upwards to locate the nearest go.mod file.
@@ -572,7 +531,7 @@ func findModuleRoot(path string) (string, error) {
 	}
 }
 
-func isDefinedAlias(full string) (bool, error) {
+func isDefinedAlias(full string, modulesGoGet map[string]struct{}, pkgsInfo map[string][]*packages.Package) (bool, error) {
 	items := strings.SplitN(full, "@", 2)
 	packagedType := items[0]
 	version := ""
@@ -595,22 +554,29 @@ func isDefinedAlias(full string) (bool, error) {
 	if version != "" {
 		goGetArg += "@" + version
 	}
-
-	// Toujours exécuter un go get pour s'assurer que le module est dans go.mod
-	cmd := exec.Command("go", "get", goGetArg)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return false, fmt.Errorf("failed to go get module: %w", err)
+	if _, alreadyGot := modulesGoGet[goGetArg]; !alreadyGot {
+		cmd := exec.Command("go", "get", goGetArg)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return false, fmt.Errorf("failed to go get module: %w", err)
+		}
+		modulesGoGet[goGetArg] = struct{}{}
 	}
-
 	// Charger le package
 	cfg := &packages.Config{
 		Mode: packages.NeedTypes | packages.NeedTypesInfo | packages.NeedImports | packages.NeedName,
 	}
-	pkgs, err := packages.Load(cfg, importPath)
-	if err != nil {
-		return false, err
+	var pkgs []*packages.Package
+	if pkgsInfo[importPath] != nil {
+		pkgs = pkgsInfo[importPath]
+	} else {
+		var err error
+		pkgs, err = packages.Load(cfg, importPath)
+		if err != nil {
+			return false, err
+		}
+		pkgsInfo[importPath] = pkgs
 	}
 	if packages.PrintErrors(pkgs) > 0 {
 		return false, fmt.Errorf("failed to load package %s", importPath)
@@ -640,7 +606,7 @@ func isDefinedAlias(full string) (bool, error) {
 	return true, nil // alias (vers un primitif ou autre)
 }
 
-func parseTypeSpec(full string) (TypeSpec, error) {
+func parseTypeSpec(full string, modulesGoGet map[string]struct{}, pkgsInfo map[string][]*packages.Package) (TypeSpec, error) {
 	var version string
 	var base string
 
@@ -660,7 +626,7 @@ func parseTypeSpec(full string) (TypeSpec, error) {
 	importName := path.Base(pkgPath)
 	alias := utils.AliasPkg(importName)
 
-	isAlias, err := isDefinedAlias(full)
+	isAlias, err := isDefinedAlias(full, modulesGoGet, pkgsInfo)
 	if err != nil {
 		return TypeSpec{}, fmt.Errorf("could not determine if type is defined alias: %w", err)
 	}
@@ -680,4 +646,29 @@ func parseTypeSpec(full string) (TypeSpec, error) {
 		IsAliasType:  isAlias,
 		AliasTypeVar: aliasVar,
 	}, nil
+}
+
+func findDepsInExpr(expr ast.Expr, deps map[string]bool) {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		deps[t.Name] = true
+
+	case *ast.SelectorExpr:
+		deps[t.Sel.Name] = true
+
+	case *ast.StarExpr:
+		findDepsInExpr(t.X, deps)
+
+	case *ast.ArrayType:
+		findDepsInExpr(t.Elt, deps)
+
+	case *ast.MapType:
+		findDepsInExpr(t.Key, deps)
+		findDepsInExpr(t.Value, deps)
+
+	case *ast.StructType:
+		for _, field := range t.Fields.List {
+			findDepsInExpr(field.Type, deps)
+		}
+	}
 }
