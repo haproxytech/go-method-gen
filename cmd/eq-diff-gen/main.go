@@ -32,6 +32,11 @@ import (
 )
 
 func main() {
+	err := os.Chdir("{{.Cwd}}")
+	if err != nil {
+		fmt.Println("Failed to change working directory:", err)
+		os.Exit(1)
+	}
 	{{range $_, $typeSpec := .TypeSpecs}}{{if $typeSpec.IsAliasType}}
 	var {{$typeSpec.AliasTypeVar}} {{$typeSpec.PackagedType}}
 	{{end}}{{end}}
@@ -44,7 +49,7 @@ func main() {
 		{{end}}{{end}}
 	}
 
-	err := eqdiff.Generate(types, eqdiff.Options{
+	err = eqdiff.Generate(types, eqdiff.Options{
 		OutputDir: {{printf "%q" .OutputDir}},
 		OverridesFile: {{printf "%q" .OverridesPath}},
 		HeaderPath: {{printf "%q" .HeaderPath}},
@@ -62,6 +67,7 @@ type TemplateData struct {
 	OutputDir     string
 	OverridesPath string
 	HeaderPath    string
+	Cwd           string
 }
 
 type TypeSpec struct {
@@ -297,6 +303,7 @@ func main() {
 		OutputDir:     absOutputDir,
 		OverridesPath: overridesPath,
 		HeaderPath:    headerPath,
+		Cwd:           cwd(),
 	}
 	generateMainGo(tmpDir, data, debug)
 	addGoGetDeps(tmpDir, importsWithVersion, debug)
