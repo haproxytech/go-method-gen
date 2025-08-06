@@ -204,25 +204,6 @@ func main() {
 	// map import path -> alias (alias = "" means no alias)
 	imports := make(map[string]string)
 	importSet := make(map[string]bool)
-	modulesGoGet := make(map[string]struct{})
-	pkgsInfo := map[string][]*packages.Package{}
-	for _, full := range typeArgs {
-		typeSpec, err := parseTypeSpec(full, modulesGoGet, pkgsInfo)
-		if err != nil {
-			exit(err.Error())
-		}
-		typeSpecs[full] = typeSpec
-		if !importSet[typeSpec.Package] {
-			importSet[typeSpec.Package] = true
-			pkg := typeSpec.Package
-			if typeSpec.Version != "" {
-				pkg += "@" + typeSpec.Version
-			}
-			importsWithVersion = append(importsWithVersion, pkg)
-			// Alias detection for dash in package base name
-			imports[typeSpec.Package] = typeSpec.PackageAlias
-		}
-	}
 
 	absOutputDir := filepath.Join(cwd(), outputDir)
 	clearOutputDir(absOutputDir, debug)
@@ -253,7 +234,25 @@ func main() {
 	}
 
 	generateGoModWithReplaces(tmpDir, replaceEqdiffPath, extraReplaces, debug)
-
+	modulesGoGet := make(map[string]struct{})
+	pkgsInfo := map[string][]*packages.Package{}
+	for _, full := range typeArgs {
+		typeSpec, err := parseTypeSpec(full, modulesGoGet, pkgsInfo)
+		if err != nil {
+			exit(err.Error())
+		}
+		typeSpecs[full] = typeSpec
+		if !importSet[typeSpec.Package] {
+			importSet[typeSpec.Package] = true
+			pkg := typeSpec.Package
+			if typeSpec.Version != "" {
+				pkg += "@" + typeSpec.Version
+			}
+			importsWithVersion = append(importsWithVersion, pkg)
+			// Alias detection for dash in package base name
+			imports[typeSpec.Package] = typeSpec.PackageAlias
+		}
+	}
 	if seenScan {
 		importsScan, specs, err := scanTypes(scanPath, moduleName, relPath)
 		check(err)
@@ -633,10 +632,7 @@ func parseTypeSpec(full string, modulesGoGet map[string]struct{}, pkgsInfo map[s
 	importName := path.Base(pkgPath)
 	alias := utils.AliasPkg(importName)
 
-	isAlias, err := isDefinedAlias(full, modulesGoGet, pkgsInfo)
-	if err != nil {
-		return TypeSpec{}, fmt.Errorf("could not determine if type is defined alias: %w", err)
-	}
+	isAlias, _ := isDefinedAlias(full, modulesGoGet, pkgsInfo)
 	var aliasVar string
 	if isAlias {
 		aliasVar = utils.GenerateAliasVarName(importName + "." + typeName)
