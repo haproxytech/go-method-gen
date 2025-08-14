@@ -60,12 +60,11 @@ func Generate(types []reflect.Type, opts Options) error {
 	setDiffsFuncsByBaseDir := map[string]map[string]struct{}{}  // baseDir -> Diffxx funcName
 	for _, root := range roots {
 		ctx := &data.Ctx{LeftSideComparison: "rec", RightSideComparison: "obj"}
-		if root.HasEqual {
-			continue
+		if !root.HasEqual {
+			equal.Generate(root, ctx, equal.EqualCtx{
+				Overrides: overrides,
+			})
 		}
-		equal.Generate(root, ctx, equal.EqualCtx{
-			Overrides: overrides,
-		})
 		if len(ctx.SubCtxs) == 1 {
 			contents := map[string]map[string]string{} // file -> func -> implementation
 			writer.WriteEqualFiles(dir, "", contents, *ctx.SubCtxs[0])
@@ -130,12 +129,11 @@ func Generate(types []reflect.Type, opts Options) error {
 			}
 		}
 		ctx = &data.Ctx{LeftSideComparison: "rec", RightSideComparison: "obj"}
-		if root.HasDiff {
-			continue
+		if !root.HasDiff {
+			diff.Generate(root, ctx, diff.DiffCtx{
+				Overrides: overrides,
+			})
 		}
-		diff.Generate(root, ctx, diff.DiffCtx{
-			Overrides: overrides,
-		})
 		if len(ctx.SubCtxs) == 1 {
 			contents := map[string]map[string]string{} // file -> func -> implementation
 			writer.WriteDiffFiles(dir, "", contents, *ctx.SubCtxs[0])
