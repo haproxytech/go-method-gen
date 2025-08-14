@@ -1,6 +1,6 @@
-# eq-diff-gen – Struct Comparison and Merge Code Generator for Go
+# go-method-gen – Struct Comparison and Merge Code Generator for Go
 
-`eq-diff-gen` is a development utility that generates `Equal`, `Diff`, and `Merge` functions for Go structs using reflection. It is designed to reduce boilerplate and promote consistent comparison and merging behavior across complex structures.
+`go-method-gen` is a development utility that generates `Equal`, `Diff`, and `Merge` functions for Go structs using reflection. It is designed to reduce boilerplate and promote consistent comparison and merging behavior across complex structures.
 
 This tool is useful for applications involving configuration merging, object synchronization, and state comparison.
 
@@ -53,15 +53,15 @@ func (rec StructA) Diff(obj StructA) map[string][]interface{} {
 ## Installation
 
 ```bash
-go install github.com/<TBD>/eq-diff-gen/cmd/eq-diff-gen/@latest
+go install github.com/<TBD>/go-method-gen/cmd/go-method-gen/@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/<TBD>/eq-diff-gen
-cd eq-diff-gen
-go build -o eq-diff-gen
+git clone https://github.com/<TBD>/go-method-gen
+cd go-method-gen
+go build -o go-method-gen
 ```
 
 ---
@@ -69,14 +69,14 @@ go build -o eq-diff-gen
 ## Usage
 
 ```bash
-eq-diff-gen [flags] importpath.TypeName [...]
+go-method-gen [flags] importpath.TypeName [...]
 ```
 
 You must provide fully-qualified type paths (importpath.TypeName), unless using --scan.
 
 Alternatively, use the --scan flag to automatically discover all types in a directory:
 ```bash
-eq-diff-gen --scan=./path/to/pkg [flags]
+go-method-gen --scan=./path/to/pkg [flags]
 ```
 ⚠️ --scan is exclusive with explicit type arguments. You must use one or the other, not both.
 
@@ -86,7 +86,7 @@ Options:
 --output-dir=DIR|Path to write generated code (default: ./generated)  |
 --keep-temp	|Keep temporary working files (.eqdiff-tmp) for inspection  |
 --debug	|Enable verbose output (shows parsed args, generated code, etc.)  |
---replace-eqdiff=DIR|	Use a local path for the eqdiff module  |
+--replace-gomethodgen=DIR|	Use a local path for the go-method-gen module  |
 --replace=MOD:LOCALPATH|	Add a replace directive in the generated go.mod (can be used multiple times)  |
 --overrides=FILE.yaml|YAML file to override diff/equal logic for specific fields  |
 --header-file=PATH|Optional Go file to prepend as header in generated output  |
@@ -122,7 +122,7 @@ The tool will extract the type name from the final segment after the last dot (.
 ## Example Use Case
 
 ```bash
-eq-diff-gen --keep-temp --debug --replace-eqdiff=/home/user/dev/eqdiff github.com/example/project/config.StructConfig
+go-method-gen --keep-temp --debug --replace-gomethodgen=/home/user/dev/go-method-gen github.com/example/project/config.StructConfig
 ```
 
 This generates methods like `Equal`, `Diff`, and `Merge` for `StructConfig`, stores intermediate files, outputs debug logs, and uses a local path for the `eqdiff` module.
@@ -172,7 +172,7 @@ github.com/myorg/data/v5/models.Acls:
     pkg: "github.com/myorg/myproject/pkg/structs/funcs"
     name: "DiffAcls"
 ```
-This example tells eq-diff-gen to use the custom functions EqualStructA and DiffStructA for StructA, and EqualAcls and DiffAcls for models.Acls.
+This example tells go-method-gen to use the custom functions EqualStructA and DiffStructA for StructA, and EqualAcls and DiffAcls for models.Acls.
 
 These functions must have the correct signature, typically:
 

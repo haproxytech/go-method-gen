@@ -1,6 +1,6 @@
 package equal
 
-import "github.com/haproxytech/eqdiff/internal/data"
+import "github.com/haproxytech/gomethodgen/internal/data"
 
 func EqualGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Interface {

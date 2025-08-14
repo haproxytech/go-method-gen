@@ -14,7 +14,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/eqdiff/internal/utils"
+	"github.com/haproxytech/gomethodgen/internal/utils"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -38,7 +38,7 @@ import (
 	{{range $imp, $alias := .Imports}}{{if ne $alias ""}}
 	{{$alias}} "{{$imp}}"{{else}}
 	"{{$imp}}"{{end}}{{end}}
-	"github.com/haproxytech/eqdiff/pkg/eqdiff"
+	"github.com/haproxytech/gomethodgen/pkg/eqdiff"
 )
 
 func main() {
@@ -107,7 +107,7 @@ func main() {
 	outputDir := "./generated"
 	var typeArgs []string
 	var keepTemp, debug bool
-	var replaceEqdiffPath, overridesPath, headerPath string
+	var replaceGoMethodGenPath, overridesPath, headerPath string
 	var extraReplaces []string
 	var seenOutputDir, seenKeepTemp, seenDebug,
 		seenHeader, seenReplace, seenOverrides bool
@@ -147,11 +147,11 @@ func main() {
 			debug = true
 			seenDebug = true
 
-		case strings.HasPrefix(arg, "--replace-eqdiff="):
+		case strings.HasPrefix(arg, "--replace-gomethodgen="):
 			if seenReplace {
-				exit("Error: --replace-eqdiff specified more than once")
+				exit("Error: --replace-gomethodgen specified more than once")
 			}
-			replaceEqdiffPath = strings.TrimPrefix(arg, "--replace-eqdiff=")
+			replaceGoMethodGenPath = strings.TrimPrefix(arg, "--replace-gomethodgen=")
 			seenReplace = true
 		case strings.HasPrefix(arg, "--overrides="):
 			if seenOverrides {
@@ -192,7 +192,7 @@ func main() {
 		fmt.Printf("  - outputDir: %s\n", outputDir)
 		fmt.Printf("  - keepTemp: %v\n", keepTemp)
 		fmt.Printf("  - typeArgs: %v\n", typeArgs)
-		fmt.Printf("  - replaceEqdiffPath: %s\n", replaceEqdiffPath)
+		fmt.Printf("  - replaceEqdiffPath: %s\n", replaceGoMethodGenPath)
 		fmt.Printf("  - overridesPath: %s\n", overridesPath)
 		fmt.Printf("  - extraReplaces: %v\n", extraReplaces)
 	}
@@ -264,7 +264,7 @@ func main() {
 	}
 
 	// --- Write go.mod with replaces (eqdiff + user-provided replaces) ---
-	generateGoModWithReplaces(tmpDir, replaceEqdiffPath, extraReplaces, debug)
+	generateGoModWithReplaces(tmpDir, replaceGoMethodGenPath, extraReplaces, debug)
 	// We'll reuse these across lookups to avoid repeated 'go get' and package loads.
 	modulesGoGet := make(map[string]struct{})
 	pkgsInfo := map[string][]*packages.Package{}
@@ -376,7 +376,7 @@ func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces [
 	goModPath := filepath.Join(tmpDir, "go.mod")
 	goModContent := "module eqdiff-tmp\n\ngo 1.21\n"
 	if replaceEqdiffPath != "" {
-		goModContent += fmt.Sprintf("\nreplace github.com/haproxytech/eqdiff => %s\n", replaceEqdiffPath)
+		goModContent += fmt.Sprintf("\nreplace github.com/haproxytech/gomethodgen => %s\n", replaceEqdiffPath)
 	}
 	for _, repl := range extraReplaces {
 		// Accept "module:path" (we normalize to a replace directive).
@@ -415,12 +415,12 @@ func addGoGetDeps(tmpDir string, importsWithVersion []string, debug bool) {
 		check(cmd.Run())
 	}
 
-	cmd := exec.Command("go", "get", "github.com/haproxytech/eqdiff/pkg/eqdiff")
+	cmd := exec.Command("go", "get", "github.com/haproxytech/gomethodgen/pkg/eqdiff")
 	cmd.Dir = tmpDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if debug {
-		fmt.Println("\u2022 Running: go get github.com/haproxytech/eqdiff/pkg/eqdiff")
+		fmt.Println("\u2022 Running: go get github.com/haproxytech/gomethodgen/pkg/eqdiff")
 	}
 	check(cmd.Run())
 

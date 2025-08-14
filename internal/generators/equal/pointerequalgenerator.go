@@ -4,7 +4,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/eqdiff/internal/data"
+	"github.com/haproxytech/gomethodgen/internal/data"
 )
 
 var equalPointerTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) bool {

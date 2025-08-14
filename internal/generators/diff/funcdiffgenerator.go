@@ -1,6 +1,6 @@
 package diff
 
-import "github.com/haproxytech/eqdiff/internal/data"
+import "github.com/haproxytech/gomethodgen/internal/data"
 
 func DiffGeneratorFunc(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Func {

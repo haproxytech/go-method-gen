@@ -5,8 +5,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/eqdiff/internal/data"
-	"github.com/haproxytech/eqdiff/internal/utils"
+	"github.com/haproxytech/gomethodgen/internal/data"
+	"github.com/haproxytech/gomethodgen/internal/utils"
 )
 
 var builtinDiffTemplateTxt = `if {{ .LeftSideComparison }}.{{ .FieldName }} != {{ .RightSideComparison }}.{{ .FieldName }} {

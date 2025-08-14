@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/eqdiff/internal/data"
+	"github.com/haproxytech/gomethodgen/internal/data"
 )
 
 // diffTemplateRawTxt defines the Go function template for generating a Diff method

@@ -3,7 +3,7 @@ package equal
 import (
 	"strings"
 
-	"github.com/haproxytech/eqdiff/internal/data"
+	"github.com/haproxytech/gomethodgen/internal/data"
 )
 
 func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {

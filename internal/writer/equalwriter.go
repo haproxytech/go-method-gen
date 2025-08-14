@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/eqdiff/internal/data"
+	"github.com/haproxytech/gomethodgen/internal/data"
 )
 
 const equalTemplateTxt = `func ({{.LeftSideComparison}} {{.Type}}) Equal({{.RightSideComparison}} {{.Type}}) bool {

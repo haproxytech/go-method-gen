@@ -1,8 +1,8 @@
 package diff
 
 import (
-	"github.com/haproxytech/eqdiff/internal/common"
-	"github.com/haproxytech/eqdiff/internal/data"
+	"github.com/haproxytech/gomethodgen/internal/common"
+	"github.com/haproxytech/gomethodgen/internal/data"
 )
 
 func DiffGeneratorForNodeWithDiff(node *data.TypeNode, ctx *data.Ctx) bool {
