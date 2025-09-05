@@ -3,8 +3,8 @@ package diff
 import (
 	"strings"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
-	"github.com/haproxytech/gomethodgen/internal/utils"
+	"github.com/haproxytech/go-method-gen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/utils"
 )
 
 func Generate(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
@@ -32,10 +32,9 @@ func Generate(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 		ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 		if node.UpNode == nil {
 			ctxDiff.DiffFuncName = fn.Name
-			ctxDiff.DiffImplementation =
-				"for diffKey, diffValue:= range " +
-					utils.ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj)" + "{\n" +
-					"\tdiff[\"" + node.Type + "\"] = diffValue\n}"
+			ctxDiff.DiffImplementation = "for diffKey, diffValue:= range " +
+				utils.ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj)" + "{\n" +
+				"\tdiff[\"" + node.Type + "\"] = diffValue\n}"
 		} else {
 			ctxDiff.DiffFuncName = utils.ExtractPkg(fn.Pkg) + "." + fn.Name
 		}

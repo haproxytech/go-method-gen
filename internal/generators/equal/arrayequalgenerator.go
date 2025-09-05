@@ -4,7 +4,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
 var equalArrayTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) bool {

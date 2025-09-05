@@ -1,6 +1,6 @@
 package equal
 
-import "github.com/haproxytech/gomethodgen/internal/data"
+import "github.com/haproxytech/go-method-gen/internal/data"
 
 func EqualGeneratorFunc(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Func {

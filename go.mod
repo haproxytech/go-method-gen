@@ -1,4 +1,4 @@
-module github.com/haproxytech/eqdiff
+module github.com/haproxytech/go-method-gen
 
 go 1.23.5
 

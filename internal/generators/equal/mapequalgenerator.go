@@ -4,7 +4,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
 const equalMapRawTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) bool {
@@ -77,5 +77,4 @@ func EqualGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, equalCtx Equal
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	EqualGeneratorRawMap(node, ctxEqual, equalCtx)
 	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
-
 }

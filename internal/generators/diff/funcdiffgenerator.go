@@ -1,6 +1,6 @@
 package diff
 
-import "github.com/haproxytech/gomethodgen/internal/data"
+import "github.com/haproxytech/go-method-gen/internal/data"
 
 func DiffGeneratorFunc(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Func {

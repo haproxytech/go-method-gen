@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/utils"
+	"github.com/haproxytech/go-method-gen/internal/utils"
 )
 
 // Constants used as keys when passing template data to Equal/Diff templates

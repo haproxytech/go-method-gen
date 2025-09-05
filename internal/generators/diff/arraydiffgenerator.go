@@ -4,7 +4,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
 var diffArrayTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[string][]interface{}  {
@@ -63,7 +63,6 @@ func DiffGeneratorArrayDefinedType(node *data.TypeNode, ctx *data.Ctx, diffCtx D
 	DiffGeneratorArrayRawType(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
-
 }
 
 func DiffGeneratorArrayRawType(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {

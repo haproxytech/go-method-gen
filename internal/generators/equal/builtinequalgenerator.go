@@ -4,8 +4,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
-	"github.com/haproxytech/gomethodgen/internal/utils"
+	"github.com/haproxytech/go-method-gen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/utils"
 )
 
 const equalBuiltinDefinedTemplateTxt = `func {{.EqualFuncName}}(x,y {{.ParameterType}}) bool {
@@ -55,8 +55,10 @@ func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, equalCtx E
 	}
 
 	var sb strings.Builder
-	equalBuiltinDefinedTemplate.Execute(&sb, map[string]string{data.EqualFuncNameDataMap: equalFuncName,
-		data.ParameterTypeDataMap: parameterType})
+	equalBuiltinDefinedTemplate.Execute(&sb, map[string]string{
+		data.EqualFuncNameDataMap: equalFuncName,
+		data.ParameterTypeDataMap: parameterType,
+	})
 	ctxEqualImpl.EqualImplementation = sb.String()
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	ctxEqual.SubCtxs = append(ctxEqual.SubCtxs, ctxEqualImpl)

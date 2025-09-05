@@ -4,7 +4,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
 const diffPointerRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[string][]interface{}  {
@@ -26,7 +26,7 @@ const diffPointerDefinedTemplateTxt = `if x == nil && y == nil {
 		return diff
 	case y == nil:
 		diff[key] = []interface{}{*x, y}
-		return diff	
+		return diff
 	}
 
 	{{ if  (eq .IsBuiltinSubNode "true") }}

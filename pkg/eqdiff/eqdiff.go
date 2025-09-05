@@ -9,12 +9,12 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/haproxytech/gomethodgen/internal/common"
-	"github.com/haproxytech/gomethodgen/internal/data"
-	"github.com/haproxytech/gomethodgen/internal/generators/diff"
-	"github.com/haproxytech/gomethodgen/internal/generators/equal"
-	"github.com/haproxytech/gomethodgen/internal/parser"
-	"github.com/haproxytech/gomethodgen/internal/writer"
+	"github.com/haproxytech/go-method-gen/internal/common"
+	"github.com/haproxytech/go-method-gen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/generators/diff"
+	"github.com/haproxytech/go-method-gen/internal/generators/equal"
+	"github.com/haproxytech/go-method-gen/internal/parser"
+	"github.com/haproxytech/go-method-gen/internal/writer"
 	imp "golang.org/x/tools/imports"
 	yaml "gopkg.in/yaml.v3"
 )
@@ -28,7 +28,6 @@ type Options struct {
 
 // Generate generates Equal and Diff functions for the provided types.
 func Generate(types []reflect.Type, opts Options) error {
-
 	roots := []*data.TypeNode{}
 	dir := opts.OutputDir
 	var overrides map[string]common.OverrideFuncs
@@ -132,7 +131,7 @@ func Generate(types []reflect.Type, opts Options) error {
 					if errFormat != nil {
 						fmt.Println(errFormat.Error())
 						os.WriteFile(file, sb.Bytes(), 0o644)
-						//return errFormat
+						// return errFormat
 					} else {
 						os.WriteFile(file, formattedCode, 0o644)
 					}

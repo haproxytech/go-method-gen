@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
-	"github.com/haproxytech/gomethodgen/internal/utils"
+	"github.com/haproxytech/go-method-gen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/utils"
 )
 
 // typesToSkip lists fully-qualified type names that should not be parsed.

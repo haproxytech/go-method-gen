@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
 const equalTemplateTxt = `func ({{.LeftSideComparison}} {{.Type}}) Equal({{.RightSideComparison}} {{.Type}}) bool {
@@ -35,7 +35,6 @@ var equalTemplate = template.Must(template.New("EqualTemplate").Parse(equalTempl
 //   - If the type is not a struct/defined type, the Equal implementation is appended to the existing file entry.
 //   - This function is recursive: it processes all sub-contexts in ctx.SubCtxs.
 func WriteEqualFiles(dir, file string, files map[string]map[string]string, ctx data.Ctx) error {
-
 	// Skip generation if Equal function name or implementation is missing
 	if ctx.EqualFuncName == "" {
 		return nil

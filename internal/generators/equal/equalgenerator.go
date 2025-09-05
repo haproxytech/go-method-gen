@@ -3,8 +3,8 @@ package equal
 import (
 	"strings"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
-	"github.com/haproxytech/gomethodgen/internal/utils"
+	"github.com/haproxytech/go-method-gen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/utils"
 )
 
 func Generate(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {

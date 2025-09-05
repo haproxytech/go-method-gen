@@ -12,7 +12,7 @@ This tool is useful for applications involving configuration merging, object syn
 * **Generate diff functions**: Return field-level differences between structs.
 * **Custom field overrides**: Provide fine-grained diff/equality behavior via YAML override files.
 * **Header injection**: Add license or documentation header to generated code.
-* **Module path replacement**: Use local module paths for `eqdiff` or any dependency.
+* **Module path replacement**: Use local module paths for `go-method-gen` or any dependency.
 * **CLI compatible**: Usable as a standalone binary or as a scriptable tool in CI/CD.
 * **Directory scanning**: Automatically scan a directory for Go types with --scan.
 
@@ -53,13 +53,13 @@ func (rec StructA) Diff(obj StructA) map[string][]interface{} {
 ## Installation
 
 ```bash
-go install github.com/<TBD>/go-method-gen/cmd/go-method-gen/@latest
+go install github.com/haproxytech/go-method-gen/cmd/go-method-gen/@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/<TBD>/go-method-gen
+git clone https://github.com/haproxytech/go-method-gen
 cd go-method-gen
 go build -o go-method-gen
 ```
@@ -84,9 +84,9 @@ Options:
 |option|functionality|
 |--|--|
 --output-dir=DIR|Path to write generated code (default: ./generated)  |
---keep-temp	|Keep temporary working files (.eqdiff-tmp) for inspection  |
+--keep-temp	|Keep temporary working files (.go-method-gen-tmp) for inspection  |
 --debug	|Enable verbose output (shows parsed args, generated code, etc.)  |
---replace-gomethodgen=DIR|	Use a local path for the go-method-gen module  |
+--replace-go-method-gen=DIR|	Use a local path for the go-method-gen module  |
 --replace=MOD:LOCALPATH|	Add a replace directive in the generated go.mod (can be used multiple times)  |
 --overrides=FILE.yaml|YAML file to override diff/equal logic for specific fields  |
 --header-file=PATH|Optional Go file to prepend as header in generated output  |
@@ -122,10 +122,10 @@ The tool will extract the type name from the final segment after the last dot (.
 ## Example Use Case
 
 ```bash
-go-method-gen --keep-temp --debug --replace-gomethodgen=/home/user/dev/go-method-gen github.com/example/project/config.StructConfig
+go-method-gen --keep-temp --debug --replace-go-method-gen=/home/user/dev/go-method-gen github.com/example/project/config.StructConfig
 ```
 
-This generates methods like `Equal`, `Diff`, and `Merge` for `StructConfig`, stores intermediate files, outputs debug logs, and uses a local path for the `eqdiff` module.
+This generates methods like `Equal`, `Diff`, and `Merge` for `StructConfig`, stores intermediate files, outputs debug logs, and uses a local path for the `go-method-gen` module.
 
 ---
 ## Custom Function Overrides (via --overrides)
@@ -176,7 +176,7 @@ This example tells go-method-gen to use the custom functions EqualStructA and Di
 
 These functions must have the correct signature, typically:
 
-`func EqualStructA(a, b StructA) bool`  
+`func EqualStructA(a, b StructA) bool`
 `func DiffStructA(a, b StructA) map[string][]interface{}`
 
 💡 The specified packages will automatically be imported in the generated file, and the functions will be used instead of auto-generated ones.

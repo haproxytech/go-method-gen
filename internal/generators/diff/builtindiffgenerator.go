@@ -5,8 +5,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
-	"github.com/haproxytech/gomethodgen/internal/utils"
+	"github.com/haproxytech/go-method-gen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/utils"
 )
 
 var builtinDiffTemplateTxt = `if {{ .LeftSideComparison }}.{{ .FieldName }} != {{ .RightSideComparison }}.{{ .FieldName }} {
@@ -69,7 +69,7 @@ func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 	ctxDiff.SubCtxs = append(ctxDiff.SubCtxs, ctxDiffImpl)
 	ctxDiffImpl.DiffImplementation = fmt.Sprintf(`func %s (x, y %s) map[string][]interface{} {
 		diff := make(map[string][]interface{})
-		if x != y { 
+		if x != y {
 			diff["%s"] = []interface{}{x, y}
 		}
 		return diff

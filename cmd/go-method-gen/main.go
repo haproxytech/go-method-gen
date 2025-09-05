@@ -14,7 +14,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/utils"
+	"github.com/haproxytech/go-method-gen/internal/utils"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -38,7 +38,7 @@ import (
 	{{range $imp, $alias := .Imports}}{{if ne $alias ""}}
 	{{$alias}} "{{$imp}}"{{else}}
 	"{{$imp}}"{{end}}{{end}}
-	"github.com/haproxytech/gomethodgen/pkg/eqdiff"
+	"github.com/haproxytech/go-method-gen/pkg/eqdiff"
 )
 
 func main() {
@@ -147,11 +147,11 @@ func main() {
 			debug = true
 			seenDebug = true
 
-		case strings.HasPrefix(arg, "--replace-gomethodgen="):
+		case strings.HasPrefix(arg, "--replace-go-method-gen="):
 			if seenReplace {
-				exit("Error: --replace-gomethodgen specified more than once")
+				exit("Error: --replace-go-method-gen specified more than once")
 			}
-			replaceGoMethodGenPath = strings.TrimPrefix(arg, "--replace-gomethodgen=")
+			replaceGoMethodGenPath = strings.TrimPrefix(arg, "--replace-go-method-gen=")
 			seenReplace = true
 		case strings.HasPrefix(arg, "--overrides="):
 			if seenOverrides {
@@ -253,7 +253,7 @@ func main() {
 	}
 
 	// --- Create and (optionally) keep the temp workspace ---
-	tmpDir := filepath.Join(cwd(), ".eqdiff-tmp")
+	tmpDir := filepath.Join(cwd(), ".go-method-gen-tmp")
 	err := os.MkdirAll(tmpDir, 0o755)
 	check(err)
 
@@ -376,7 +376,7 @@ func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces [
 	goModPath := filepath.Join(tmpDir, "go.mod")
 	goModContent := "module eqdiff-tmp\n\ngo 1.21\n"
 	if replaceEqdiffPath != "" {
-		goModContent += fmt.Sprintf("\nreplace github.com/haproxytech/gomethodgen => %s\n", replaceEqdiffPath)
+		goModContent += fmt.Sprintf("\nreplace github.com/haproxytech/go-method-gen => %s\n", replaceEqdiffPath)
 	}
 	for _, repl := range extraReplaces {
 		// Accept "module:path" (we normalize to a replace directive).
@@ -386,7 +386,7 @@ func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces [
 		}
 		goModContent += fmt.Sprintf("replace %s => %s\n", strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 	}
-	err := os.WriteFile(goModPath, []byte(goModContent), 0644)
+	err := os.WriteFile(goModPath, []byte(goModContent), 0o644)
 	check(err)
 
 	if debug {
@@ -415,12 +415,12 @@ func addGoGetDeps(tmpDir string, importsWithVersion []string, debug bool) {
 		check(cmd.Run())
 	}
 
-	cmd := exec.Command("go", "get", "github.com/haproxytech/gomethodgen/pkg/eqdiff")
+	cmd := exec.Command("go", "get", "github.com/haproxytech/go-method-gen/pkg/eqdiff")
 	cmd.Dir = tmpDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if debug {
-		fmt.Println("\u2022 Running: go get github.com/haproxytech/gomethodgen/pkg/eqdiff")
+		fmt.Println("\u2022 Running: go get github.com/haproxytech/go-method-gen/pkg/eqdiff")
 	}
 	check(cmd.Run())
 

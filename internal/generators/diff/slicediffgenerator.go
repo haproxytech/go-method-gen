@@ -4,7 +4,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/haproxytech/gomethodgen/internal/data"
+	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
 var diffSliceRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[string][]interface{}  {
@@ -15,11 +15,11 @@ var diffSliceRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) m
 	if (x == nil && y == nil) || (lenX ==0 && lenY ==0) {
 		return diff
 	}
-	
+
 	if x == nil {
 		return map[string][]interface{}{"": {nil, y}}
 	}
-	
+
 	if y == nil {
 		return map[string][]interface{}{"": {x, nil}}
 	}
