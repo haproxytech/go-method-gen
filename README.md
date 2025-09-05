@@ -1,4 +1,9 @@
+# ![HAProxy](assets/images/haproxy-weblogo-210x49.png "HAProxy")
+
 # go-method-gen – Struct Comparison and Merge Code Generator for Go
+
+[![Contributors](https://img.shields.io/github/contributors/haproxytech/go-method-gen?color=purple)](https://github.com/haproxy/haproxy/blob/master/CONTRIBUTING)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 `go-method-gen` is a development utility that generates `Equal`, `Diff`, and `Merge` functions for Go structs using reflection. It is designed to reduce boilerplate and promote consistent comparison and merging behavior across complex structures.
 
