@@ -126,7 +126,7 @@ func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 		StructFieldsEqual(node, typ, pkg, typesProcessed)
 	}
 	// Err will be true only if all fields have Err set to true
-	node.Err = true
+	node.Err = !node.HasEqual
 	for _, field := range node.Fields {
 		node.Err = node.Err && field.Err
 	}

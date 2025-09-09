@@ -49,11 +49,11 @@ func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 		if subCtx.Err {
 			continue
 		}
-		if subCtx.ObjectKind != data.KindToString(data.Struct) {
-			for imp, marker := range subCtx.Imports {
-				ctxDiff.Imports[imp] = marker
-			}
+
+		for imp, marker := range subCtx.Imports {
+			ctxDiff.Imports[imp] = marker
 		}
+
 		if i != 0 && i < numSubCtxs {
 			implementation.WriteString("\n")
 		}

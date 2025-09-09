@@ -28,7 +28,14 @@ func Generate(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 		return
 	}
 
-	packagedType := node.PkgPath + "." + node.Type
+	nodeType := node.Type
+	if nodeType == "" {
+		pkgAndType := strings.SplitN(node.PackagedType, ".", 2)
+		if len(pkgAndType) > 1 {
+			nodeType = pkgAndType[0]
+		}
+	}
+	packagedType := node.PkgPath + "." + nodeType
 	override, hasOverride := equalCtx.Overrides[packagedType]
 	if hasOverride && override.Equal != nil {
 		fn := override.Equal
