@@ -49,8 +49,8 @@ func EqualGeneratorPointerDefinedType(node *data.TypeNode, ctx *data.Ctx, equalC
 	ctxEqual := &data.Ctx{
 		ObjectKind:                 data.KindToString(node.Kind),
 		ObjectNameToHaveGeneration: node.Name,
-		LeftSideComparison:         "x",
-		RightSideComparison:        "y",
+		LeftSideComparison:         "*x",
+		RightSideComparison:        "*y",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
 		Pkg:                        strings.Split(node.PackagedType, ".")[0],
@@ -73,8 +73,8 @@ func EqualGeneratorPointerRawType(node *data.TypeNode, ctx *data.Ctx, equalCtx E
 	}
 	ctxEqual := &data.Ctx{
 		ObjectNameToHaveGeneration: node.Name,
-		LeftSideComparison:         "x",
-		RightSideComparison:        "y",
+		LeftSideComparison:         "*x",
+		RightSideComparison:        "*y",
 		ObjectKind:                 data.KindToString(node.Kind),
 		Imports:                    node.Imports,
 		Type:                       node.Type,

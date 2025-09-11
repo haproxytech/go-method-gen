@@ -73,8 +73,8 @@ func DiffGeneratorDefinedPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 	ctxDiff := &data.Ctx{
 		ObjectKind:                 data.KindToString(node.Kind),
 		ObjectNameToHaveGeneration: node.Name,
-		LeftSideComparison:         "x",
-		RightSideComparison:        "y",
+		LeftSideComparison:         "*x",
+		RightSideComparison:        "*y",
 		DiffFuncName:               "Diff",
 		PkgPath:                    node.PkgPath,
 		Pkg:                        strings.Split(node.PackagedType, ".")[0],
@@ -100,8 +100,8 @@ func DiffGeneratorRawPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx
 	ctxDiff := &data.Ctx{
 		ObjectNameToHaveGeneration: node.Name,
 		Imports:                    node.Imports,
-		LeftSideComparison:         "x",
-		RightSideComparison:        "y",
+		LeftSideComparison:         "*x",
+		RightSideComparison:        "*y",
 		ObjectKind:                 data.KindToString(node.Kind),
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)

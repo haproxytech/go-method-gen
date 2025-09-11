@@ -16,7 +16,6 @@ package eqdiff
 import (
 	"bytes"
 	"fmt"
-	"go/format"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -140,14 +139,7 @@ func Generate(types []reflect.Type, opts Options) error {
 				}
 				// Format and write source
 				if hasFunc {
-					formattedCode, errFormat := format.Source(sb.Bytes())
-					if errFormat != nil {
-						fmt.Println(errFormat.Error())
-						os.WriteFile(file, sb.Bytes(), 0o644)
-						// return errFormat
-					} else {
-						os.WriteFile(file, formattedCode, 0o644)
-					}
+					writeFormattedFile(sb.Bytes(), file)
 
 				}
 			}
@@ -216,17 +208,26 @@ func Generate(types []reflect.Type, opts Options) error {
 					sb.WriteString(fun + "\n")
 				}
 				if hasFunc {
-					// Use x/tools/imports to format code and fix imports
-					formattedCode, errFormat := imp.Process("", sb.Bytes(), nil)
-					if errFormat != nil {
-						fmt.Printf("file: %s, err: %s\n", file, errFormat.Error())
-						fmt.Println(sb.String())
-						return errFormat
-					}
-					os.WriteFile(file, formattedCode, 0o644)
+					writeFormattedFile(sb.Bytes(), file)
 				}
 			}
 		}
 	}
 	return nil
+}
+
+// writeFormattedFile takes a byte slice of Go source code, formats it
+// with go/imports, and writes the formatted code to the file at the
+// given path. If an error occurs, it prints the error to stderr and
+// returns the error.
+
+func writeFormattedFile(contents []byte, file string) error {
+	// Use x/tools/imports to format code and fix imports
+	formattedCode, errFormat := imp.Process("", contents, nil)
+	if errFormat != nil {
+		fmt.Printf("file: %s, err: %s\n", file, errFormat.Error())
+		fmt.Println(string(contents))
+		return errFormat
+	}
+	return os.WriteFile(file, formattedCode, 0o644)
 }

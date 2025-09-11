@@ -167,7 +167,7 @@ func GetTemplateDataFromSubNodeEqual(node *TypeNode, ctx *Ctx) map[string]string
 		equalFuncName := subCtx.EqualFuncName
 		switch {
 		case (node.SubNode.HasEqual || equalFuncName == "Equal") && node.Kind == Pointer:
-			subValueEqual = "(*" + ctx.LeftSideComparison + ").Equal(*" + ctx.RightSideComparison + ")"
+			subValueEqual = "(" + ctx.LeftSideComparison + ").Equal(" + ctx.RightSideComparison + ")"
 			subValueUnequal = "!" + subValueEqual
 		case node.HasEqual || equalFuncName == "Equal":
 			subValueEqual = ctx.LeftSideComparison + ".Equal(" + ctx.RightSideComparison + ")"
@@ -176,8 +176,8 @@ func GetTemplateDataFromSubNodeEqual(node *TypeNode, ctx *Ctx) map[string]string
 			subValueEqual = subCtx.EqualFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison + ")"
 			subValueUnequal = "!" + subValueEqual
 		case equalFuncName == "" && node.Kind == Pointer:
-			subValueEqual = "*" + ctx.LeftSideComparison + " == *" + ctx.RightSideComparison
-			subValueUnequal = "*" + ctx.LeftSideComparison + " != *" + ctx.RightSideComparison
+			subValueEqual = ctx.LeftSideComparison + " == " + ctx.RightSideComparison
+			subValueUnequal = ctx.LeftSideComparison + " != " + ctx.RightSideComparison
 		default:
 			subValueEqual = subCtx.EqualImplementation
 			subValueUnequal = subCtx.InequalImplementation
@@ -203,7 +203,7 @@ func GetTemplateDataFromSubNodeDiff(node *TypeNode, ctx *Ctx) map[string]string 
 		diffFuncName := subCtx.DiffFuncName
 		switch {
 		case (node.SubNode.HasDiff || diffFuncName == "Diff") && node.Kind == Pointer:
-			subValueDiff = "(*" + ctx.LeftSideComparison + ").Diff(*" + ctx.RightSideComparison + ")"
+			subValueDiff = "(" + ctx.LeftSideComparison + ").Diff(" + ctx.RightSideComparison + ")"
 		case node.HasDiff || diffFuncName == "Diff":
 			subValueDiff = ctx.LeftSideComparison + ".Diff(" + ctx.RightSideComparison + ")"
 		case diffFuncName != "":
