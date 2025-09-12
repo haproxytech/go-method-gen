@@ -51,7 +51,10 @@ func Generate(types []reflect.Type, opts Options) error {
 		if err != nil {
 			return err
 		}
-		headerContent = string(data)
+		for _, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimSpace(line)
+			headerContent += fmt.Sprintf("// %s\n", line)
+		}
 	}
 	// Read optional overrides file in YAML format
 	if opts.OverridesFile != "" {
