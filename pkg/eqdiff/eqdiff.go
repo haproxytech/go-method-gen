@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/haproxytech/go-method-gen/internal/common"
@@ -29,6 +30,7 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/writer"
 	imp "golang.org/x/tools/imports"
 	yaml "gopkg.in/yaml.v3"
+	"mvdan.cc/gofumpt/format"
 )
 
 // Options for the code generation
@@ -89,9 +91,15 @@ func Generate(types []reflect.Type, opts Options) error {
 		if len(ctx.SubCtxs) == 1 {
 			contents := map[string]map[string]string{} // file -> func -> implementation
 			writer.WriteEqualFiles(dir, "", contents, *ctx.SubCtxs[0])
+			sortedFiles := make([]string, 0, len(contents))
+			for file := range contents {
+				sortedFiles = append(sortedFiles, file)
+			}
+			slices.Sort(sortedFiles)
 			// Deduplicate functions per baseDir
-			for file, funcs := range contents {
-				for funName := range funcs {
+			for _, file := range sortedFiles {
+				funcs := contents[file]
+				for _, funName := range funcs {
 					if funName == "Equal" || !strings.HasPrefix(funName, "Equal") {
 						continue
 					}
@@ -109,7 +117,8 @@ func Generate(types []reflect.Type, opts Options) error {
 				}
 			}
 			// Write files
-			for file, funcs := range contents {
+			for _, file := range sortedFiles {
+				funcs := contents[file]
 				baseDir := filepath.Dir(file)
 				pkgfuncs, pkgExists := funcsByPkg[baseDir]
 				if !pkgExists {
@@ -132,7 +141,13 @@ func Generate(types []reflect.Type, opts Options) error {
 				delete(funcs, "Imports")
 				// Append functions that were not already written
 				var hasFunc bool
-				for _, fun := range funcs {
+				sortedFuncs := make([]string, 0, len(funcs))
+				for funName := range funcs {
+					sortedFuncs = append(sortedFuncs, funName)
+				}
+				slices.Sort(sortedFuncs)
+				for _, sortedFun := range sortedFuncs {
+					fun := funcs[sortedFun]
 					if _, funExists := pkgfuncs[fun]; funExists {
 						continue
 					}
@@ -142,8 +157,10 @@ func Generate(types []reflect.Type, opts Options) error {
 				}
 				// Format and write source
 				if hasFunc {
-					writeFormattedFile(sb.Bytes(), file)
-
+					errWriting := writeFormattedFile(sb.Bytes(), file)
+					if errWriting != nil {
+						return errWriting
+					}
 				}
 			}
 		}
@@ -158,9 +175,15 @@ func Generate(types []reflect.Type, opts Options) error {
 		if len(ctx.SubCtxs) == 1 {
 			contents := map[string]map[string]string{} // file -> func -> implementation
 			writer.WriteDiffFiles(dir, "", contents, *ctx.SubCtxs[0])
+			var files []string
+			for file := range contents {
+				files = append(files, file)
+			}
+			slices.Sort(files)
 
 			// Deduplicate Diff functions per baseDir
-			for file, funcs := range contents {
+			for _, file := range files {
+				funcs := contents[file]
 				for funName := range funcs {
 					if funName == "Diff" || !strings.HasPrefix(funName, "Diff") {
 						continue
@@ -180,7 +203,13 @@ func Generate(types []reflect.Type, opts Options) error {
 			}
 
 			// Write files
-			for file, funcs := range contents {
+			for _, file := range files {
+				funcs := contents[file]
+				sortedFuncs := make([]string, 0, len(funcs))
+				for funName := range funcs {
+					sortedFuncs = append(sortedFuncs, funName)
+				}
+				slices.Sort(sortedFuncs)
 				baseDir := filepath.Dir(file)
 				pkgfuncs, pkgExists := funcsByPkg[baseDir]
 				if !pkgExists {
@@ -202,7 +231,8 @@ func Generate(types []reflect.Type, opts Options) error {
 				sb.WriteString(imports + "\n")
 				delete(funcs, "Imports")
 				var hasFunc bool
-				for _, fun := range funcs {
+				for _, sortedFun := range sortedFuncs {
+					fun := funcs[sortedFun]
 					if _, funExists := pkgfuncs[fun]; funExists {
 						continue
 					}
@@ -232,5 +262,9 @@ func writeFormattedFile(contents []byte, file string) error {
 		fmt.Println(string(contents))
 		return errFormat
 	}
-	return os.WriteFile(file, formattedCode, 0o644)
+	final, err := format.Source(formattedCode, format.Options{})
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(file, final, 0o644)
 }
