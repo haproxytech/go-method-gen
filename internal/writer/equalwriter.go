@@ -22,7 +22,7 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-const equalTemplateTxt = `func ({{.LeftSideComparison}} {{.Type}}) Equal({{.RightSideComparison}} {{.Type}}) bool {
+const equalTemplateTxt = `func ({{.LeftSideComparison}} {{.Type}}) Equal({{.RightSideComparison}} {{.Type}}, opts ...eqdiff.GoMethodGenOptions) bool {
 	return {{.EqualImplementation}}
 }
 `
@@ -79,6 +79,10 @@ func WriteEqualFiles(dir, file string, files map[string]map[string]string, ctx d
 
 		// Build the import clause if the context has imports
 		var importsClause string
+		if ctx.Imports == nil {
+			ctx.Imports = map[string]struct{}{}
+		}
+		ctx.Imports["github.com/haproxytech/go-method-gen/pkg/eqdiff"] = struct{}{}
 		if len(ctx.Imports) > 0 {
 			imports := bytes.Buffer{}
 			for imp := range ctx.Imports {

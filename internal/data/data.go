@@ -167,13 +167,13 @@ func GetTemplateDataFromSubNodeEqual(node *TypeNode, ctx *Ctx) map[string]string
 		equalFuncName := subCtx.EqualFuncName
 		switch {
 		case (node.SubNode.HasEqual || equalFuncName == "Equal") && node.Kind == Pointer:
-			subValueEqual = "(" + ctx.LeftSideComparison + ").Equal(" + ctx.RightSideComparison + ")"
+			subValueEqual = "(" + ctx.LeftSideComparison + ").Equal(" + ctx.RightSideComparison + ", opts...)"
 			subValueUnequal = "!" + subValueEqual
 		case node.HasEqual || equalFuncName == "Equal":
-			subValueEqual = ctx.LeftSideComparison + ".Equal(" + ctx.RightSideComparison + ")"
+			subValueEqual = ctx.LeftSideComparison + ".Equal(" + ctx.RightSideComparison + ", opts...)"
 			subValueUnequal = "!" + subValueEqual
 		case equalFuncName != "":
-			subValueEqual = subCtx.EqualFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison + ")"
+			subValueEqual = subCtx.EqualFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison + ", opts...)"
 			subValueUnequal = "!" + subValueEqual
 		case equalFuncName == "" && node.Kind == Pointer:
 			subValueEqual = ctx.LeftSideComparison + " == " + ctx.RightSideComparison

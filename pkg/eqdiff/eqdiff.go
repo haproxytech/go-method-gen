@@ -22,13 +22,14 @@ import (
 	"slices"
 	"strings"
 
+	imp "golang.org/x/tools/imports"
+
 	"github.com/haproxytech/go-method-gen/internal/common"
 	"github.com/haproxytech/go-method-gen/internal/data"
 	"github.com/haproxytech/go-method-gen/internal/generators/diff"
 	"github.com/haproxytech/go-method-gen/internal/generators/equal"
 	"github.com/haproxytech/go-method-gen/internal/parser"
 	"github.com/haproxytech/go-method-gen/internal/writer"
-	imp "golang.org/x/tools/imports"
 	yaml "gopkg.in/yaml.v3"
 	"mvdan.cc/gofumpt/format"
 )

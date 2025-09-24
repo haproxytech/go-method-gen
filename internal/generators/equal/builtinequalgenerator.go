@@ -21,7 +21,7 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/utils"
 )
 
-const equalBuiltinDefinedTemplateTxt = `func {{.EqualFuncName}}(x,y {{.ParameterType}}) bool {
+const equalBuiltinDefinedTemplateTxt = `func {{.EqualFuncName}}(x,y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) bool {
 	return x == y
 }`
 

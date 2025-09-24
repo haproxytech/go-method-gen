@@ -61,12 +61,12 @@ func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx)
 		case subCtx.EqualFuncName == "Equal":
 			implementation.WriteString(ctxEqual.LeftSideComparison + "." +
 				subCtx.ObjectNameToHaveGeneration + "." + subCtx.EqualFuncName + "(" +
-				ctxEqual.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ")")
+				ctxEqual.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ", opts...)")
 		// case subCtx.EqualFuncName != "" && node.HasEqual:
 		case subCtx.EqualFuncName != "":
 			implementation.WriteString(subCtx.EqualFuncName + "(" + ctxEqual.LeftSideComparison + "." +
 				subCtx.ObjectNameToHaveGeneration + "," +
-				ctxEqual.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ")")
+				ctxEqual.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ", opts...)")
 		default:
 			implementation.WriteString(subCtx.EqualImplementation)
 		}

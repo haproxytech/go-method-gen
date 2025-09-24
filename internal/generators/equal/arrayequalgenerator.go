@@ -20,7 +20,7 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-var equalArrayTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) bool {
+var equalArrayTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) bool {
 	for i := range x {
         if {{.InequalityTest}} {
             return false
@@ -61,7 +61,7 @@ func EqualGeneratorDefinedArray(node *data.TypeNode, ctx *data.Ctx, equalCtx Equ
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	EqualGeneratorRawArray(node, ctxEqual, equalCtx)
-	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
+	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y, opts...)"
 }
 
 func EqualGeneratorRawArray(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {

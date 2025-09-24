@@ -20,7 +20,7 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-var equalPointerTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) bool {
+var equalPointerTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) bool {
 	if x == nil || y == nil {
 		return x == y
 	}
@@ -60,7 +60,7 @@ func EqualGeneratorPointerDefinedType(node *data.TypeNode, ctx *data.Ctx, equalC
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	EqualGeneratorPointerRawType(node, ctxEqual, equalCtx)
-	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
+	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y, opts...)"
 }
 
 func EqualGeneratorPointerRawType(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {

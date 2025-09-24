@@ -20,7 +20,22 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-const equalMapRawTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}) bool {
+const equalMapRawTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) bool {
+
+	var opt *eqdiff.GoMethodGenOptions
+    if len(opts) > 0 {
+        opt = &opts[0]
+    }
+
+	if (x == nil) != (y == nil) {
+		if opt == nil || (opt != nil && !opt.TreatNilNotAsEmpty) {
+			if len(x) == 0 && len(y) == 0 {
+				return true
+			}
+		}
+		return false
+	}
+
 	if len(x) != len(y) {
 		return false
 	}
@@ -89,5 +104,5 @@ func EqualGeneratorDefinedMap(node *data.TypeNode, ctx *data.Ctx, equalCtx Equal
 
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	EqualGeneratorRawMap(node, ctxEqual, equalCtx)
-	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y)"
+	ctxEqual.EqualImplementation = ctxEqual.SubCtxs[0].EqualFuncName + "(x, y, opts...)"
 }
