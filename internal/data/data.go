@@ -65,6 +65,7 @@ func (k Kind) MarshalYAML() (interface{}, error) {
 // TypeNode represents a type or field in the type hierarchy
 type TypeNode struct {
 	HasEqual         bool           // True if type has an existing Equal method
+	HasEqualOpts     bool           // True if type has an existing Equal method with options
 	HasDiff          bool           // True if type has an existing Diff method
 	Name             string         // Field name, empty for root type
 	Type             string         // Field type name
@@ -166,14 +167,29 @@ func GetTemplateDataFromSubNodeEqual(node *TypeNode, ctx *Ctx) map[string]string
 		subType = subCtx.Type
 		equalFuncName := subCtx.EqualFuncName
 		switch {
-		case (node.SubNode.HasEqual || equalFuncName == "Equal") && node.Kind == Pointer:
-			subValueEqual = "(" + ctx.LeftSideComparison + ").Equal(" + ctx.RightSideComparison + ", opts...)"
+		case (node.SubNode.HasEqual || node.SubNode.HasEqualOpts || equalFuncName == "Equal") && node.Kind == Pointer:
+			subValueEqual = "(" + ctx.LeftSideComparison + ").Equal(" + ctx.RightSideComparison
+			lastArgument := ", opts...)"
+			if node.SubNode.HasEqual {
+				lastArgument = ")"
+			}
+			subValueEqual += lastArgument
 			subValueUnequal = "!" + subValueEqual
 		case node.HasEqual || equalFuncName == "Equal":
-			subValueEqual = ctx.LeftSideComparison + ".Equal(" + ctx.RightSideComparison + ", opts...)"
+			subValueEqual = ctx.LeftSideComparison + ".Equal(" + ctx.RightSideComparison
+			lastArgument := ", opts...)"
+			if node.SubNode.HasEqual {
+				lastArgument = ")"
+			}
+			subValueEqual += lastArgument
 			subValueUnequal = "!" + subValueEqual
 		case equalFuncName != "":
-			subValueEqual = subCtx.EqualFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison + ", opts...)"
+			subValueEqual = subCtx.EqualFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison
+			lastArgument := ", opts...)"
+			if node.SubNode.HasEqual {
+				lastArgument = ")"
+			}
+			subValueEqual += lastArgument
 			subValueUnequal = "!" + subValueEqual
 		case equalFuncName == "" && node.Kind == Pointer:
 			subValueEqual = ctx.LeftSideComparison + " == " + ctx.RightSideComparison
@@ -259,6 +275,12 @@ func GetTypeFromNode(node *TypeNode) string {
 			name = node.Type
 		} else {
 			name = node.PackagedType
+		}
+	case Interface:
+		if node.Type != "" {
+			name = node.Type
+		} else {
+			name = "interface{}"
 		}
 	default:
 		name = node.Type

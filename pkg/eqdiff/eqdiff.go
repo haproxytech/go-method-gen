@@ -84,7 +84,7 @@ func Generate(types []reflect.Type, opts Options) error {
 	for _, root := range roots {
 		// Generate Equal functions if not already present
 		ctx := &data.Ctx{LeftSideComparison: "rec", RightSideComparison: "obj"}
-		if !root.HasEqual {
+		if !root.HasEqual && !root.HasEqualOpts {
 			equal.Generate(root, ctx, equal.EqualCtx{
 				Overrides: overrides,
 			})

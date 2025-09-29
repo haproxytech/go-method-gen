@@ -19,15 +19,22 @@ import (
 )
 
 func EqualGeneratorForNodeWithEqual(node *data.TypeNode, ctx *data.Ctx) bool {
-	if !node.HasEqual {
+	if !node.HasEqual && !node.HasEqualOpts {
 		return false
 	}
 	var equalImplementation, unequalImplementation string
 	if node.IsForField() {
-		equalImplementation = ctx.LeftSideComparison + "." + node.Name + ".Equal(" + ctx.RightSideComparison + "." + node.Name + ")"
+		equalImplementation = ctx.LeftSideComparison + "." + node.Name + ".Equal(" + ctx.RightSideComparison + "." + node.Name
 	} else {
-		equalImplementation = ctx.LeftSideComparison + ".Equal(" + ctx.RightSideComparison + ")"
+		equalImplementation = ctx.LeftSideComparison + ".Equal(" + ctx.RightSideComparison
 	}
+
+	if node.HasEqualOpts {
+		equalImplementation += ", opts...)"
+	} else {
+		equalImplementation += ")"
+	}
+
 	unequalImplementation = "!" + equalImplementation
 	ctxEqual := &data.Ctx{
 		InequalImplementation:      unequalImplementation,

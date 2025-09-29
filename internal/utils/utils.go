@@ -84,16 +84,44 @@ func SerializeJSON[T any](node T) string {
 }
 
 // HasEqualFor checks whether a given type defines an Equal method
-// with the exact signature: func (T) Equal(T) bool.
-func HasEqualFor(typ reflect.Type) bool {
+// with the exact signature: func (T) Equal(T) bool or func (T) Equal(T, opts ...GoMethodGenOptions) bool
+func HasEqualFor(typ reflect.Type) (hasEqual bool, hasEqualWithOpts bool) {
 	if typ.PkgPath() == "" {
-		return false
+		return false, false
 	}
 	method, found := typ.MethodByName("Equal")
-	return found && method.Type.NumIn() == 2 && // method has exactly one argument (plus the receiver)
-		method.Type.In(0).AssignableTo(typ) && // receiver matches the given type
-		method.Type.NumOut() == 1 && // exactly one return value
-		method.Type.Out(0).Kind() == reflect.Bool // return type is bool
+	if !found {
+		return false, false
+	}
+
+	// must return bool
+	if method.Type.NumOut() != 1 || method.Type.Out(0).Kind() != reflect.Bool {
+		return false, false
+	}
+
+	// receiver must match the given type
+	if !method.Type.In(0).AssignableTo(typ) {
+		return false, false
+	}
+
+	// Cas 1 : Equal(other T) bool
+	if method.Type.NumIn() == 2 {
+		return true, false
+	}
+
+	// Cas 2 : Equal(other T, opts ...GoMethodGenOptions) bool
+	if method.Type.NumIn() == 3 && method.Type.IsVariadic() {
+		paramType := method.Type.In(2)
+		if paramType.Kind() == reflect.Slice {
+			elem := paramType.Elem()
+			if elem.PkgPath() == "github.com/haproxytech/go-method-gen/pkg/eqdiff" &&
+				elem.Name() == "GoMethodGenOptions" {
+				return false, true
+			}
+		}
+	}
+
+	return false, false
 }
 
 // HasDiffFor checks whether a given type defines a Diff method
