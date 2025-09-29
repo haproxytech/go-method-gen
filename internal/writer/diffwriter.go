@@ -25,7 +25,7 @@ import (
 // diffTemplateRawTxt defines the Go function template for generating a Diff method
 // when the type is a struct. The generated function builds a diff map by executing
 // the provided implementation code inside it.
-const diffTemplateRawTxt = `func ({{.LeftSideComparison}} {{.Type}}) Diff({{.RightSideComparison}} {{.Type}}) map[string][]interface{} {
+const diffTemplateRawTxt = `func ({{.LeftSideComparison}} {{.Type}}) Diff({{.RightSideComparison}} {{.Type}}, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{} {
 	diff := make(map[string][]interface{})
 	{{.DiffImplementation}}
 	return diff
@@ -35,7 +35,7 @@ const diffTemplateRawTxt = `func ({{.LeftSideComparison}} {{.Type}}) Diff({{.Rig
 // diffTemplateDefinedTxt defines the Go function template for generating a Diff method
 // for defined types (type aliases). In this case, the implementation is expected to
 // return the diff map directly, so no initialization code is included.
-const diffTemplateDefinedTxt = `func ({{.LeftSideComparison}} {{.Type}}) Diff({{.RightSideComparison}} {{.Type}}) map[string][]interface{} {
+const diffTemplateDefinedTxt = `func ({{.LeftSideComparison}} {{.Type}}) Diff({{.RightSideComparison}} {{.Type}}, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{} {
 	return {{.DiffImplementation}}
 }
 `
@@ -100,6 +100,10 @@ func WriteDiffFiles(dir, file string, files map[string]map[string]string, ctx da
 
 		// Build imports section if needed
 		var importsClause string
+		if ctx.Imports == nil {
+			ctx.Imports = map[string]struct{}{}
+		}
+		ctx.Imports["github.com/haproxytech/go-method-gen/pkg/eqdiff"] = struct{}{}
 		if len(ctx.Imports) > 0 {
 			imports := bytes.Buffer{}
 			for imp := range ctx.Imports {

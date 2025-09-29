@@ -20,7 +20,7 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-const diffPointerRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[string][]interface{}  {
+const diffPointerRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{}  {
 	diff := make(map[string][]interface{})
 ` + diffPointerDefinedTemplateTxt + `
 }`
@@ -86,7 +86,7 @@ func DiffGeneratorDefinedPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 	DiffGeneratorRawPointer(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
 	data.ApplyTemplateForDiff(node, ctxDiff, diffPointerRawTemplate)
-	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
+	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y, opts...)"
 }
 
 func DiffGeneratorRawPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {

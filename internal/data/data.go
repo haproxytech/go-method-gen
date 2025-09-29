@@ -203,11 +203,11 @@ func GetTemplateDataFromSubNodeDiff(node *TypeNode, ctx *Ctx) map[string]string 
 		diffFuncName := subCtx.DiffFuncName
 		switch {
 		case (node.SubNode.HasDiff || diffFuncName == "Diff") && node.Kind == Pointer:
-			subValueDiff = "(" + ctx.LeftSideComparison + ").Diff(" + ctx.RightSideComparison + ")"
+			subValueDiff = "(" + ctx.LeftSideComparison + ").Diff(" + ctx.RightSideComparison + ", opts...)"
 		case node.HasDiff || diffFuncName == "Diff":
-			subValueDiff = ctx.LeftSideComparison + ".Diff(" + ctx.RightSideComparison + ")"
+			subValueDiff = ctx.LeftSideComparison + ".Diff(" + ctx.RightSideComparison + ", opts...)"
 		case diffFuncName != "":
-			subValueDiff = subCtx.DiffFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison + ")"
+			subValueDiff = subCtx.DiffFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison + ", opts...)"
 		default:
 			subValueDiff = subCtx.DiffImplementation
 		}

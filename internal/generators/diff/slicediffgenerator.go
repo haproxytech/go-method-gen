@@ -20,18 +20,25 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-var diffSliceRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[string][]interface{}  {
+var diffSliceRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{}  {
+	
+	var opt *eqdiff.GoMethodGenOptions
+    if len(opts) > 0 {
+        opt = &opts[0]
+    }
+	
 	diff := make(map[string][]interface{})
 	lenX := len(x)
 	lenY := len(y)
 
-	if (x == nil && y == nil) || (lenX ==0 && lenY ==0) {
-		return diff
-	}
-
-	if x == nil {
-		return map[string][]interface{}{"": {nil, y}}
-	}
+	if (x == nil && y == nil) || (lenX == 0 && lenY == 0) {
+        return diff
+    }
+    if opt == nil || (opt != nil && !opt.TreatNilNotAsEmpty) {
+        if (x == nil && lenY == 0) || (y == nil && lenX == 0) {
+            return diff
+        }
+    }
 
 	if y == nil {
 		return map[string][]interface{}{"": {x, nil}}
@@ -102,7 +109,7 @@ func DiffGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, diffCtx D
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 	DiffGeneratorSliceRawType(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
-	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
+	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y, opts...)"
 }
 
 func DiffGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {

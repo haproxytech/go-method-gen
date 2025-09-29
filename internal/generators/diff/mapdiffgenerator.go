@@ -20,13 +20,24 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-const diffMapRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[string][]interface{}  {
+const diffMapRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{}  {
 	diff := make(map[string][]interface{})
 ` + diffMapDefinedTemplateTxt + `
 }`
 
-const diffMapDefinedTemplateTxt = `if (x == nil && y == nil) || (len(x) ==0 && len(y) ==0) {
+const diffMapDefinedTemplateTxt = `if (x == nil && y == nil) || (len(x) == 0 && len(y) == 0) {
 		return diff
+	}
+
+	var opt *eqdiff.GoMethodGenOptions
+    if len(opts) > 0 {
+        opt = &opts[0]
+    }
+
+	if opt == nil || (opt != nil && !opt.TreatNilNotAsEmpty) {
+		if (x == nil && len(y) == 0) || (y == nil && len(x) == 0) {
+			return diff
+		}
 	}
 
 	if x == nil {

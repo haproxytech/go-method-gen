@@ -70,14 +70,14 @@ func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 		case subCtx.DiffFuncName == "Diff":
 			implementation.WriteString("for diffKey, diffValue:= range " + ctxDiff.LeftSideComparison + "." +
 				subCtx.ObjectNameToHaveGeneration + "." + subCtx.DiffFuncName + "(" +
-				ctxDiff.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ") {\n" +
+				ctxDiff.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ", opts...) {\n" +
 				"\tdiff[" + key + "] = diffValue\n}")
 		// case subCtx.DiffFuncName != "" && node.HasDiff:
 		case subCtx.DiffFuncName != "":
 
 			implementation.WriteString("for diffKey, diffValue:= range " + subCtx.DiffFuncName + "(" + ctxDiff.LeftSideComparison + "." +
 				subCtx.ObjectNameToHaveGeneration + "," +
-				ctxDiff.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ") {\n" +
+				ctxDiff.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ", opts...) {\n" +
 				"\tdiff[" + key + "] = diffValue\n}")
 		default:
 			implementation.WriteString(subCtx.DiffImplementation)

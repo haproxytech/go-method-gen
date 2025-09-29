@@ -80,7 +80,7 @@ func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 		name = node.Name
 	}
 	ctxDiff.SubCtxs = append(ctxDiff.SubCtxs, ctxDiffImpl)
-	ctxDiffImpl.DiffImplementation = fmt.Sprintf(`func %s (x, y %s) map[string][]interface{} {
+	ctxDiffImpl.DiffImplementation = fmt.Sprintf(`func %s (x, y %s, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{} {
 		diff := make(map[string][]interface{})
 		if x != y {
 			diff["%s"] = []interface{}{x, y}

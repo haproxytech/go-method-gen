@@ -20,7 +20,7 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-var diffArrayTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}) map[string][]interface{}  {
+var diffArrayTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{}  {
 	diff := make(map[string][]interface{})
 	for i, vx := range x {
 		key := fmt.Sprintf("[%d]{{ .SubType }}",i)
@@ -75,7 +75,7 @@ func DiffGeneratorArrayDefinedType(node *data.TypeNode, ctx *data.Ctx, diffCtx D
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 	DiffGeneratorArrayRawType(node, ctxDiff, diffCtx)
 	ctxDiff.Err = ctxDiff.SubCtxs[0].Err
-	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y)"
+	ctxDiff.DiffImplementation = ctxDiff.SubCtxs[0].DiffFuncName + "(x, y, opts...)"
 }
 
 func DiffGeneratorArrayRawType(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
