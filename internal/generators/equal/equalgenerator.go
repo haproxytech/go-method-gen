@@ -51,7 +51,7 @@ func Generate(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 		ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 		if node.UpNode == nil {
 			ctxEqual.EqualFuncName = fn.Name
-			ctxEqual.EqualImplementation = utils.ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj)"
+			ctxEqual.EqualImplementation = utils.ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj, opts...)"
 		} else {
 			ctxEqual.EqualFuncName = utils.ExtractPkg(fn.Pkg) + "." + fn.Name
 		}

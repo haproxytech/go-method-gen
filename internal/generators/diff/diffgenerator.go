@@ -52,8 +52,8 @@ func Generate(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 		ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 		if node.UpNode == nil {
 			ctxDiff.DiffFuncName = fn.Name
-			ctxDiff.DiffImplementation = "for diffKey, diffValue:= range " +
-				utils.ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj)" + "{\n" +
+			ctxDiff.DiffImplementation = "for _, diffValue:= range " +
+				utils.ExtractPkg(fn.Pkg) + "." + fn.Name + "(rec, obj, opts...)" + "{\n" +
 				"\tdiff[\"" + node.Type + "\"] = diffValue\n}"
 		} else {
 			ctxDiff.DiffFuncName = utils.ExtractPkg(fn.Pkg) + "." + fn.Name
