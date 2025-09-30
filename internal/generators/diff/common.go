@@ -24,9 +24,14 @@ func DiffGeneratorForNodeWithDiff(node *data.TypeNode, ctx *data.Ctx) bool {
 	}
 	var diffImplementation string
 	if node.IsForField() {
-		diffImplementation = ctx.LeftSideComparison + "." + node.Name + ".Diff(" + ctx.RightSideComparison + "." + node.Name + ")"
+		diffImplementation = ctx.LeftSideComparison + "." + node.Name + ".Diff(" + ctx.RightSideComparison + "." + node.Name
 	} else {
-		diffImplementation = ctx.LeftSideComparison + ".Diff(" + ctx.RightSideComparison + ")"
+		diffImplementation = ctx.LeftSideComparison + ".Diff(" + ctx.RightSideComparison
+	}
+	if node.HasDiffOpts {
+		diffImplementation += ", opts...)"
+	} else {
+		diffImplementation += ")"
 	}
 	ctxDiff := &data.Ctx{
 		DiffImplementation:         diffImplementation,

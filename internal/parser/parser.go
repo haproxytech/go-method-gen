@@ -264,7 +264,7 @@ func DefaultParsing(node *data.TypeNode, typ reflect.Type) {
 	node.PackagedType = typ.String()
 	node.IsComparable = typ.Comparable()
 	node.HasEqual, node.HasEqualOpts = utils.HasEqualFor(typ)
-	node.HasDiff = utils.HasDiffFor(typ)
+	node.HasDiff, node.HasDiffOpts = utils.HasDiffFor(typ)
 	// Extract package name from the full type string
 	pkgAndType := strings.SplitN(node.PackagedType, ".", 2)
 	pkg := pkgAndType[0]

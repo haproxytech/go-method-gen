@@ -125,32 +125,57 @@ func HasEqualFor(typ reflect.Type) (hasEqual bool, hasEqualWithOpts bool) {
 }
 
 // HasDiffFor checks whether a given type defines a Diff method
-// with the exact signature: func (T) Diff(T) map[string][]interface{}.
-func HasDiffFor(typ reflect.Type) bool {
+// with the exact signature: func (T) Diff(T) map[string][]interface{} or func (T) Diff(T, opts ...GoMethodGenOptions) map[string][]interface{}.
+func HasDiffFor(typ reflect.Type) (hasDiff bool, hasDiffWithOpts bool) {
 	if typ.PkgPath() == "" {
-		return false
+		return false, false
 	}
 	method, found := typ.MethodByName("Diff")
+	if !found {
+		return false, false
+	}
 
-	var correctReturnType bool
-	if found {
-		outType := method.Type.Out(0)
-		// Check that return type is map[string][]interface{}
-		if outType.Kind() == reflect.Map {
-			keyType := outType.Key()
-			valueType := outType.Elem()
+	if method.Type.NumOut() != 1 {
+		return false, false
+	}
+	outType := method.Type.Out(0)
+	if outType.Kind() != reflect.Map {
+		return false, false
+	}
+	if outType.Key().Kind() != reflect.String {
+		return false, false
+	}
+	valType := outType.Elem()
+	if valType.Kind() != reflect.Slice || valType.Elem().Kind() != reflect.Interface {
+		return false, false
+	}
 
-			if keyType.Kind() == reflect.String &&
-				valueType.Kind() == reflect.Slice &&
-				valueType.Elem().Kind() == reflect.Interface {
-				correctReturnType = true
-			}
+	// method.Type.In(0) = receiver
+	numIn := method.Type.NumIn()
+	if numIn < 2 || numIn > 3 {
+		return false, false
+	}
+	if !method.Type.In(0).AssignableTo(typ) {
+		return false, false
+	}
+
+	if numIn == 2 {
+		return true, false
+	}
+
+	argType := method.Type.In(1)
+	if !argType.AssignableTo(typ) {
+		return false, false
+	}
+	lastParam := method.Type.In(2)
+	if method.Type.IsVariadic() {
+		if lastParam.Kind() == reflect.Slice &&
+			lastParam.Elem().PkgPath() == "github.com/haproxytech/go-method-gen/pkg/eqdiff" &&
+			lastParam.Elem().Name() == "GoMethodGenOptions" {
+			return true, true
 		}
 	}
-	return found && method.Type.NumIn() == 2 && // one argument (plus receiver)
-		method.Type.In(0).AssignableTo(typ) && // one argument (plus receiver)
-		method.Type.NumOut() == 1 && // single return value
-		correctReturnType
+	return false, false
 }
 
 // ExtractPkg returns the last element of a full Go import path,

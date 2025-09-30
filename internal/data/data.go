@@ -67,6 +67,7 @@ type TypeNode struct {
 	HasEqual         bool           // True if type has an existing Equal method
 	HasEqualOpts     bool           // True if type has an existing Equal method with options
 	HasDiff          bool           // True if type has an existing Diff method
+	HasDiffOpts      bool           // True if type has an existing Diff method with options
 	Name             string         // Field name, empty for root type
 	Type             string         // Field type name
 	PackagedType     string         // Fully qualified type name including package
@@ -219,11 +220,26 @@ func GetTemplateDataFromSubNodeDiff(node *TypeNode, ctx *Ctx) map[string]string 
 		diffFuncName := subCtx.DiffFuncName
 		switch {
 		case (node.SubNode.HasDiff || diffFuncName == "Diff") && node.Kind == Pointer:
-			subValueDiff = "(" + ctx.LeftSideComparison + ").Diff(" + ctx.RightSideComparison + ", opts...)"
+			subValueDiff = "(" + ctx.LeftSideComparison + ").Diff(" + ctx.RightSideComparison
+			if node.SubNode.HasDiffOpts {
+				subValueDiff += ", opts...)"
+			} else {
+				subValueDiff += ")"
+			}
 		case node.HasDiff || diffFuncName == "Diff":
-			subValueDiff = ctx.LeftSideComparison + ".Diff(" + ctx.RightSideComparison + ", opts...)"
+			subValueDiff = ctx.LeftSideComparison + ".Diff(" + ctx.RightSideComparison
+			if node.SubNode.HasDiffOpts {
+				subValueDiff += ", opts...)"
+			} else {
+				subValueDiff += ")"
+			}
 		case diffFuncName != "":
-			subValueDiff = subCtx.DiffFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison + ", opts...)"
+			subValueDiff = subCtx.DiffFuncName + "(" + ctx.LeftSideComparison + "," + ctx.RightSideComparison
+			if node.SubNode.HasDiffOpts {
+				subValueDiff += ", opts...)"
+			} else {
+				subValueDiff += ")"
+			}
 		default:
 			subValueDiff = subCtx.DiffImplementation
 		}
