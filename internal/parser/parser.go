@@ -96,12 +96,11 @@ func ParseBuiltin(node *data.TypeNode, pkg string, typ reflect.Type) {
 }
 
 // ParseInterface handles interface types.
-// It marks the node as an interface, sets SamePkgAsReferer, and flags Err=true (unsupported for equality).
+// It marks the node as an interface, sets SamePkgAsReferer.
 func ParseInterface(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Interface
 	node.SamePkgAsReferer = pkg == node.PkgPath
-	node.Err = true
 }
 
 // ParseInterface handles interface types.

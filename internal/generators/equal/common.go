@@ -49,5 +49,6 @@ func EqualGeneratorForNodeWithEqual(node *data.TypeNode, ctx *data.Ctx) bool {
 }
 
 type EqualCtx struct {
-	Overrides map[string]common.OverrideFuncs
+	Overrides               map[string]common.OverrideFuncs
+	EnableCompareInterfaces bool
 }

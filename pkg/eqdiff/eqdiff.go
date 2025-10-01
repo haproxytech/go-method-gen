@@ -86,7 +86,8 @@ func Generate(types []reflect.Type, opts Options) error {
 		ctx := &data.Ctx{LeftSideComparison: "rec", RightSideComparison: "obj"}
 		if !root.HasEqual && !root.HasEqualOpts {
 			equal.Generate(root, ctx, equal.EqualCtx{
-				Overrides: overrides,
+				Overrides:               overrides,
+				EnableCompareInterfaces: true,
 			})
 		}
 		if len(ctx.SubCtxs) == 1 {

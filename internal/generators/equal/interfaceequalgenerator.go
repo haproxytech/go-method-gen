@@ -13,7 +13,33 @@
 // limitations under the License.
 package equal
 
-import "github.com/haproxytech/go-method-gen/internal/data"
+import (
+	"strings"
+
+	"github.com/haproxytech/go-method-gen/internal/data"
+)
+
+var equalInterfaceTemplateTxt = `func EqualInterface( x,y interface{}, opts ...eqdiff.GoMethodGenOptions) bool {
+
+	var opt *eqdiff.GoMethodGenOptions
+	if len(opts) > 0 {
+		opt = &opts[0]
+	}
+
+	if (x== nil) != (y== nil) {
+		if opt == nil || !opt.TreatNilNotAsEmpty {
+			return true
+		}
+		return false
+	}
+
+	if opt == nil || !opt.CompareInterfaces {
+		return true
+	}
+
+	return reflect.DeepEqual(x,y)
+}
+`
 
 func EqualGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx) {
 	if node.Kind != data.Interface {
@@ -21,19 +47,28 @@ func EqualGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualC
 	}
 
 	var equalImplementation, unequalImplementation string
-	if node.IsForType() {
-		equalImplementation = ctx.LeftSideComparison + " == " + ctx.RightSideComparison
+
+	if equalCtx.EnableCompareInterfaces {
+		equalImplementation = equalInterfaceTemplateTxt
+
 	} else {
-		equalImplementation = ctx.LeftSideComparison + "." + node.Name + " == " + ctx.RightSideComparison + "." + node.Name
+		equalImplementation = ctx.LeftSideComparison + " == " + ctx.RightSideComparison
 	}
-	unequalImplementation = "!" + equalImplementation
+
+	if node.Imports == nil {
+		node.Imports = make(map[string]struct{})
+	}
+	node.Imports["reflect"] = struct{}{}
 	ctxEqual := &data.Ctx{
 		ObjectNameToHaveGeneration: node.Name,
-		EqualImplementation:        equalImplementation,
-		InequalImplementation:      unequalImplementation,
 		ObjectKind:                 data.KindToString(node.Kind),
 		Imports:                    node.Imports,
-		Err:                        true,
+		EqualFuncName:              "EqualInterface",
+		EqualImplementation:        equalImplementation,
+		InequalImplementation:      unequalImplementation,
+		Type:                       node.Type,
+		PkgPath:                    node.PkgPath,
+		Pkg:                        strings.Split(node.PackagedType, ".")[0],
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 }

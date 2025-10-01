@@ -28,7 +28,7 @@ const equalMapRawTemplateTxt = `func {{.EqualFuncName}}(x, y {{.ParameterType}},
     }
 
 	if (x == nil) != (y == nil) {
-		if opt == nil || (opt != nil && !opt.TreatNilNotAsEmpty) {
+		if opt == nil || !opt.TreatNilNotAsEmpty {
 			if len(x) == 0 && len(y) == 0 {
 				return true
 			}
