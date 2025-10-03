@@ -333,6 +333,9 @@ func main() {
 			}
 		}
 	}
+	if len(typeSpecs) == 0 {
+		exit("No raw and exported types found for generation")
+	}
 	// --- Render the generated main.go into tmpDir ---
 	data := TemplateData{
 		Imports:       imports,
@@ -526,6 +529,9 @@ func scanTypes(scanPath, moduleName, relPath string) ([]string, []TypeSpec, erro
 						continue
 					}
 					typeName := typeSpec.Name.Name
+					if !ast.IsExported(typeName) {
+						continue
+					}
 					allTypes[typeName] = typeSpec
 
 					dependencies[typeName] = make(map[string]bool)
