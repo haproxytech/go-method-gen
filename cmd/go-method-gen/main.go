@@ -522,6 +522,9 @@ func scanTypes(scanPath, moduleName, relPath string) ([]string, []TypeSpec, erro
 					if !ok {
 						continue
 					}
+					if typeSpec.TypeParams != nil {
+						continue
+					}
 					typeName := typeSpec.Name.Name
 					allTypes[typeName] = typeSpec
 
