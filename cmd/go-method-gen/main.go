@@ -558,17 +558,14 @@ func scanTypes(scanPath, moduleName, relPath string) ([]string, []TypeSpec, erro
 		pkgAlias = alias
 	}
 
-	modules := make(map[string]struct{})
-	pkgsInfo := map[string][]*packages.Package{}
-	for typeName := range allTypes {
+	for typeName, typeSpec := range allTypes {
 		if used[typeName] {
 			// Skip types that are only referenced by others (dependencies).
 			continue
 		}
 
 		fullName := fmt.Sprintf("%s.%s", importPath, typeName)
-		// Determine if the named type is an alias (non-struct) or a proper struct.
-		isAlias, _ := isDefinedAlias(fullName, modules, pkgsInfo)
+		isAlias := isAliasFromAST(typeSpec)
 		packaged := fmt.Sprintf("%s.%s", pkgAlias, typeName)
 		varName := utils.GenerateAliasVarName(packaged)
 
@@ -763,4 +760,9 @@ func findDepsInExpr(expr ast.Expr, deps map[string]bool) {
 			findDepsInExpr(field.Type, deps)
 		}
 	}
+}
+
+func isAliasFromAST(ts *ast.TypeSpec) bool {
+	_, isStruct := ts.Type.(*ast.StructType)
+	return !isStruct
 }
