@@ -103,8 +103,16 @@ func ParseInterface(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 	node.SamePkgAsReferer = pkg == node.PkgPath
 }
 
-// ParseInterface handles interface types.
-// It marks the node as an interface, sets SamePkgAsReferer, and flags Err=true (unsupported for equality).
+// ParseStructure analyzes a struct type and fills the corresponding TypeNode.
+//   - Marks the node as kind Struct.
+//   - Sets SamePkgAsReferer to indicate whether the struct belongs to the same
+//     package as the one where parsing is initiated.
+//   - Initializes the imports map if the struct comes from a different package.
+//   - Skips re-processing types that have already been visited (tracked in typesProcessed).
+//   - If the struct does not have a custom Equal method, its fields are analyzed
+//     to generate equality logic.
+//   - Finally, Err is set to true only if the struct has no custom Equal method
+//     and all its fields also have Err set to true.
 func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Struct
