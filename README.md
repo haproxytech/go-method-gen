@@ -30,9 +30,9 @@ This tool is useful for applications involving configuration merging, object syn
 The generated `Equal` function checks for deep equality across fields:
 
 ```go
-func (rec StructA) Equal(obj StructA) bool {
-	return EqualMapStringString(rec.maps, obj.maps) &&
-		EqualMapIntPointerA(rec.mapA, obj.mapA)
+func (rec StructA) Equal(obj StructA, opts ...eqdiff.GoMethodGenOptions)) bool {
+	return EqualMapStringString(rec.maps, obj.maps, opts...) &&
+		EqualMapIntPointerA(rec.mapA, obj.mapA, opts...)
 }
 ```
 
@@ -41,12 +41,12 @@ func (rec StructA) Equal(obj StructA) bool {
 The generated `Diff` function returns a list of changed fields:
 
 ```go
-func (rec StructA) Diff(obj StructA) map[string][]interface{} {
+func (rec StructA) Diff(obj StructA, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{} {
 	diff := make(map[string][]interface{})
-	for diffKey, diffValue := range DiffMapStringString(rec.maps, obj.maps) {
+	for diffKey, diffValue := range DiffMapStringString(rec.maps, obj.maps, opts...) {
 		diff["maps"+diffKey] = diffValue
 	}
-	for diffKey, diffValue := range DiffMapIntPointerA(rec.mapA, obj.mapA) {
+	for diffKey, diffValue := range DiffMapIntPointerA(rec.mapA, obj.mapA, opts...) {
 		diff["mapA"+diffKey] = diffValue
 	}
 	return diff
@@ -181,7 +181,7 @@ This example tells go-method-gen to use the custom functions EqualStructA and Di
 
 These functions must have the correct signature, typically:
 
-`func EqualStructA(a, b StructA) bool`
-`func DiffStructA(a, b StructA) map[string][]interface{}`
+`func EqualStructA(a, b StructA, opts ...eqdiff.GoMethodGenOptions)) bool`
+`func DiffStructA(a, b StructA, opts ...eqdiff.GoMethodGenOptions)) map[string][]interface{}`
 
 💡 The specified packages will automatically be imported in the generated file, and the functions will be used instead of auto-generated ones.
