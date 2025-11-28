@@ -14,9 +14,9 @@
 package equal
 
 import (
-	"strings"
 	"text/template"
 
+	"github.com/haproxytech/go-method-gen/internal/common"
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
@@ -77,7 +77,7 @@ func EqualGeneratorSliceRawType(node *data.TypeNode, ctx *data.Ctx, equalCtx Equ
 		Imports:                    node.Imports,
 		Type:                       node.Type,
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
 	Generate(subNode, ctxEqual, equalCtx)
@@ -100,7 +100,7 @@ func EqualGeneratorSliceDefinedType(node *data.TypeNode, ctx *data.Ctx, equalCtx
 		RightSideComparison:        "y",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 		Type:                       node.Type,
 		DefinedType:                true,
 		Imports:                    node.Imports,

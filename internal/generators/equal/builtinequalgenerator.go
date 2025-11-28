@@ -17,6 +17,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/haproxytech/go-method-gen/internal/common"
 	"github.com/haproxytech/go-method-gen/internal/data"
 	"github.com/haproxytech/go-method-gen/internal/utils"
 )
@@ -49,7 +50,7 @@ func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, equalCtx E
 		RightSideComparison:        "y",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 		Type:                       node.Type,
 		DefinedType:                true,
 		Imports:                    node.Imports,
@@ -62,7 +63,7 @@ func EqualGeneratorBuiltinDefined(node *data.TypeNode, ctx *data.Ctx, equalCtx E
 		LeftSideComparison:         "x",
 		RightSideComparison:        "y",
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 		Type:                       node.Type,
 		EqualFuncName:              equalFuncName,
 	}

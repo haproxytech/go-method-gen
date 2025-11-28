@@ -18,6 +18,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/haproxytech/go-method-gen/internal/common"
 	"github.com/haproxytech/go-method-gen/internal/data"
 	"github.com/haproxytech/go-method-gen/internal/utils"
 )
@@ -52,7 +53,7 @@ func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 		RightSideComparison:        "y",
 		DiffFuncName:               "Diff",
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 		Type:                       node.Type,
 		DefinedType:                true,
 		DiffImplementation:         diffFuncName + "(x, y)",
@@ -71,7 +72,7 @@ func DiffGeneratorDefinedBuiltin(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 		RightSideComparison:        "y",
 		DiffFuncName:               diffFuncName,
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 		Type:                       node.Type,
 		Imports:                    node.Imports,
 	}

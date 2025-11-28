@@ -16,6 +16,7 @@ package diff
 import (
 	"strings"
 
+	"github.com/haproxytech/go-method-gen/internal/common"
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
@@ -31,7 +32,7 @@ func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 		RightSideComparison:        "obj",
 		DiffFuncName:               "Diff",
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 		Type:                       node.Type,
 	}
 

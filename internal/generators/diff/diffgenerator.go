@@ -16,6 +16,7 @@ package diff
 import (
 	"strings"
 
+	"github.com/haproxytech/go-method-gen/internal/common"
 	"github.com/haproxytech/go-method-gen/internal/data"
 	"github.com/haproxytech/go-method-gen/internal/utils"
 )
@@ -46,7 +47,7 @@ func Generate(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 			LeftSideComparison:         "x",
 			RightSideComparison:        "y",
 			PkgPath:                    node.PkgPath,
-			Pkg:                        strings.Split(node.PackagedType, ".")[0],
+			Pkg:                        common.GetPackage(node),
 			Type:                       node.Type,
 		}
 		ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)

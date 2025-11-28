@@ -165,7 +165,7 @@ func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed 
 	if node.Type != "" {
 		node.PkgPath = typ.PkgPath()
 	}
-	node.PackagedType = typ.Key().String()
+
 	node.SamePkgAsReferer = pkg == node.PkgPath
 	// Merge imports from the value type (SubNode) and key type
 	node.Imports = map[string]struct{}{}

@@ -265,9 +265,6 @@ func GetTypeFromNode(node *TypeNode) string {
 	if node == nil {
 		return ""
 	}
-	if node.Type != "" && node.Kind != Struct {
-		return node.Type
-	}
 	name := ""
 	switch node.Kind {
 	case Array:
@@ -276,7 +273,7 @@ func GetTypeFromNode(node *TypeNode) string {
 		name = "[]" + GetTypeFromNode(node.SubNode)
 	case Map:
 		var keyType string
-		if node.SamePkgAsReferer {
+		if node.SamePkgAsReferer || node.Type == "" {
 			keyType = node.MapKeyType
 		} else {
 			keyType = node.PackagedType
@@ -299,7 +296,11 @@ func GetTypeFromNode(node *TypeNode) string {
 			name = "interface{}"
 		}
 	default:
-		name = node.Type
+		if node.SamePkgAsReferer {
+			name = node.Type
+		} else {
+			name = node.PackagedType
+		}
 	}
 
 	return name

@@ -16,6 +16,7 @@ package equal
 import (
 	"strings"
 
+	"github.com/haproxytech/go-method-gen/internal/common"
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
@@ -31,7 +32,7 @@ func EqualGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualCtx)
 		RightSideComparison:        "obj",
 		EqualFuncName:              "Equal",
 		PkgPath:                    node.PkgPath,
-		Pkg:                        strings.Split(node.PackagedType, ".")[0],
+		Pkg:                        common.GetPackage(node),
 		Type:                       node.Type,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxEqual)
