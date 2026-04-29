@@ -30,11 +30,12 @@ const (
 	EqualityTestDataMap   = "EqualityTest"   // Expression for equality comparison
 	InequalityTestDataMap = "InequalityTest" // Expression for inequality comparison
 
-	DiffFuncNameDataMap = "DiffFuncName"     // Name of the Diff function
-	DiffElementMap      = "DiffElement"      // Expression for diffing
-	NodeNameMap         = "NodeName"         // Field name
-	IsBuiltinSubNodeMap = "IsBuiltinSubNode" // Indicates if sub-node is a builtin type
-	SubTypeMap          = "SubType"          // Type of sub-node
+	DiffFuncNameDataMap   = "DiffFuncName"      // Name of the Diff function
+	DiffElementMap        = "DiffElement"       // Expression for diffing
+	NodeNameMap           = "NodeName"          // Field name
+	IsBuiltinSubNodeMap   = "IsBuiltinSubNode"  // Indicates if sub-node is a builtin type
+	SubTypeMap            = "SubType"           // Type of sub-node
+	InnerDiffFuncNameMap  = "InnerDiffFuncName" // DiffFuncName of the inner sub-context (standalone helper, not method)
 )
 
 // Kind represents the kind of a type node (builtin, struct, array, slice, map, etc.)
@@ -109,6 +110,7 @@ type Ctx struct {
 	DiffFuncName                            string
 	DiffElement                             string
 	ObjectKind                              string
+	SubNodeKind                             string
 	Type                                    string
 	Imports                                 map[string]struct{}
 	Err                                     bool
@@ -249,14 +251,26 @@ func GetTemplateDataFromSubNodeDiff(node *TypeNode, ctx *Ctx) map[string]string 
 	if node.SubNode != nil && node.SubNode.Kind == Builtin {
 		isBuiltinSubNodeMap = "true"
 	}
+	// InnerDiffFuncName is set only when the inner sub-context is itself a pointer kind
+	// with a standalone helper. This is the only case where nil-delegation is valid
+	// (passing nil as a dereferenced pointer argument compiles; arrays/maps/structs cannot).
+	innerDiffFuncName := ""
+	if len(ctx.SubCtxs) == 1 {
+		subCtx := ctx.SubCtxs[0]
+		if subCtx.DiffFuncName != "" && subCtx.DiffFuncName != "Diff" &&
+			subCtx.ObjectKind == KindToString(Pointer) {
+			innerDiffFuncName = subCtx.DiffFuncName
+		}
+	}
 	diffFuncName := utils.DiffFuncName(parameterType)
 	return map[string]string{
-		ParameterTypeDataMap: parameterType,
-		DiffFuncNameDataMap:  diffFuncName,
-		DiffElementMap:       subValueDiff,
-		NodeNameMap:          node.Name,
-		IsBuiltinSubNodeMap:  isBuiltinSubNodeMap,
-		SubTypeMap:           subType,
+		ParameterTypeDataMap:  parameterType,
+		DiffFuncNameDataMap:   diffFuncName,
+		DiffElementMap:        subValueDiff,
+		NodeNameMap:           node.Name,
+		IsBuiltinSubNodeMap:   isBuiltinSubNodeMap,
+		SubTypeMap:            subType,
+		InnerDiffFuncNameMap:  innerDiffFuncName,
 	}
 }
 

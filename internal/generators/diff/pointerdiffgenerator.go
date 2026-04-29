@@ -28,30 +28,57 @@ const diffPointerRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}
 const diffPointerDefinedTemplateTxt = `if x == nil && y == nil {
 		return diff
 	}
-	{{ if .NodeName}}
-	key := "{{ .NodeName }}"
-	{{ else }}
-	key := "*{{ .SubType }}"
-	{{ end }}
+
+	{{ if (eq .IsBuiltinSubNode "true") }}
 	switch {
 	case x == nil:
-		diff[key] = []interface{}{x, *y}
+		diff[""] = []interface{}{x, *y}
 		return diff
 	case y == nil:
-		diff[key] = []interface{}{*x, y}
+		diff[""] = []interface{}{*x, y}
 		return diff
 	}
 
-	{{ if  (eq .IsBuiltinSubNode "true") }}
-	if *x != *y{
-		diff[key] = []interface{}{x, y}
+	if *x != *y {
+		diff[""] = []interface{}{*x, *y}
 	}
-	{{ else }}
+
+	return diff
+	{{ else if and (ne .InnerDiffFuncName "") (ne .InnerDiffFuncName "Diff") }}
+	switch {
+	case x == nil:
+		return {{.InnerDiffFuncName}}(nil, *y)
+	case y == nil:
+		return {{.InnerDiffFuncName}}(*x, nil)
+	}
+
 	for diffKey, diffValue := range {{.DiffElement}} {
-		diff[key+"."+diffKey]=diffValue
+		if diffKey != "" {
+			diffKey = "." + diffKey
+		}
+		diff[diffKey] = diffValue
 	}
-	{{ end }}
-	return diff`
+
+	return diff
+	{{ else }}
+	switch {
+	case x == nil:
+		diff[""] = []interface{}{x, *y}
+		return diff
+	case y == nil:
+		diff[""] = []interface{}{*x, y}
+		return diff
+	}
+
+	for diffKey, diffValue := range {{.DiffElement}} {
+		if diffKey != "" && diffKey[0] != '.' && diffKey[0] != '[' {
+			diffKey = "." + diffKey
+		}
+		diff[diffKey] = diffValue
+	}
+
+	return diff
+	{{ end }}`
 
 var diffPointerRawTemplate = template.Must(template.New("DiffPointerRawTemplate").Parse(diffPointerRawTemplateTxt))
 
@@ -70,9 +97,14 @@ func DiffGeneratorDefinedPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx Dif
 	if DiffGeneratorForNodeWithDiff(node, ctx) {
 		return
 	}
+	subNodeKind := ""
+	if node.SubNode != nil {
+		subNodeKind = data.KindToString(node.SubNode.Kind)
+	}
 	ctxDiff := &data.Ctx{
 		ObjectKind:                 data.KindToString(node.Kind),
 		ObjectNameToHaveGeneration: node.Name,
+		SubNodeKind:                subNodeKind,
 		LeftSideComparison:         "*x",
 		RightSideComparison:        "*y",
 		DiffFuncName:               "Diff",
@@ -97,12 +129,17 @@ func DiffGeneratorRawPointer(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx
 	if subNode == nil {
 		// TODO log error
 	}
+	subNodeKind := ""
+	if subNode != nil {
+		subNodeKind = data.KindToString(subNode.Kind)
+	}
 	ctxDiff := &data.Ctx{
 		ObjectNameToHaveGeneration: node.Name,
 		Imports:                    node.Imports,
 		LeftSideComparison:         "*x",
 		RightSideComparison:        "*y",
 		ObjectKind:                 data.KindToString(node.Kind),
+		SubNodeKind:                subNodeKind,
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 	Generate(subNode, ctxDiff, diffCtx)
