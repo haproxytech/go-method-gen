@@ -54,7 +54,10 @@ var diffSliceRawTemplateTxt = `func {{.DiffFuncName}}(x, y {{.ParameterType}}, o
 		}
 		{{ else }}
 		for diffKey, diffValue := range {{.DiffElement}} {
-			diff[key+"."+diffKey]=diffValue
+			if diffKey != "" && diffKey[0] != '.' && diffKey[0] != '[' {
+				diffKey = "." + diffKey
+			}
+			diff[key+diffKey]=diffValue
 		}
 		{{ end }}
 	}

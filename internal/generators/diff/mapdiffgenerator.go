@@ -57,7 +57,10 @@ const diffMapDefinedTemplateTxt = `if (x == nil && y == nil) || (len(x) == 0 && 
 		}
 		{{ else }}
 		for diffKey, diffValue := range {{.DiffElement}} {
-			diff[key+"."+diffKey]=diffValue
+			if diffKey != "" && diffKey[0] != '.' && diffKey[0] != '[' {
+				diffKey = "." + diffKey
+			}
+			diff[key+diffKey]=diffValue
 		}
 		{{ end }}
 
@@ -75,7 +78,10 @@ const diffMapDefinedTemplateTxt = `if (x == nil && y == nil) || (len(x) == 0 && 
 		}
 		{{ else }}
 		for diffKey, diffValue := range {{.DiffElement}} {
-			diff[key+"."+diffKey]= []interface{}{ diffValue[1], diffValue[0]}
+			if diffKey != "" && diffKey[0] != '.' && diffKey[0] != '[' {
+				diffKey = "." + diffKey
+			}
+			diff[key+diffKey]= []interface{}{ diffValue[1], diffValue[0]}
 		}
 		{{ end }}
 

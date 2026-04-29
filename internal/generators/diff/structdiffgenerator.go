@@ -58,9 +58,11 @@ func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 		if i != 0 && i < numSubCtxs {
 			implementation.WriteString("\n")
 		}
+		isPointerField := subCtx.ObjectKind == data.KindToString(data.Pointer)
 		keySeparator := "."
 		if subCtx.ObjectKind == data.KindToString(data.Slice) ||
-			subCtx.ObjectKind == data.KindToString(data.Map) {
+			subCtx.ObjectKind == data.KindToString(data.Map) ||
+			isPointerField {
 			keySeparator = ""
 		}
 		key := "diffKey"
@@ -75,11 +77,12 @@ func DiffGeneratorStruct(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 				"\tdiff[" + key + "] = diffValue\n}")
 		// case subCtx.DiffFuncName != "" && node.HasDiff:
 		case subCtx.DiffFuncName != "":
-
+			fieldKey := `"` + subCtx.ObjectNameToHaveGeneration + `"+diffKey`
+			loopBody := "\tif diffKey != \"\" && diffKey[0] != '.' && diffKey[0] != '[' {\n\t\tdiffKey = \".\" + diffKey\n\t}\n\tdiff[" + fieldKey + "] = diffValue"
 			implementation.WriteString("for diffKey, diffValue:= range " + subCtx.DiffFuncName + "(" + ctxDiff.LeftSideComparison + "." +
 				subCtx.ObjectNameToHaveGeneration + "," +
 				ctxDiff.RightSideComparison + "." + subCtx.ObjectNameToHaveGeneration + ", opts...) {\n" +
-				"\tdiff[" + key + "] = diffValue\n}")
+				loopBody + "\n}")
 		default:
 			implementation.WriteString(subCtx.DiffImplementation)
 		}
