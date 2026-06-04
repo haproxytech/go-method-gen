@@ -18,25 +18,22 @@ import (
 	"github.com/haproxytech/go-method-gen/internal/data"
 )
 
-var equalInterfaceTemplateTxt = `func EqualInterface( x,y interface{}, opts ...eqdiff.GoMethodGenOptions) bool {
+var equalInterfaceTemplateTxt = `func EqualInterface(x, y interface{}, opts ...eqdiff.GoMethodGenOptions) bool {
 
 	var opt *eqdiff.GoMethodGenOptions
 	if len(opts) > 0 {
 		opt = &opts[0]
 	}
 
-	if (x== nil) != (y== nil) {
-		if opt == nil || !opt.TreatNilNotAsEmpty {
-			return true
-		}
-		return false
-	}
-
-	if opt == nil || !opt.CompareInterfaces {
+	if opt != nil && !opt.CompareInterfaces {
 		return true
 	}
 
-	return reflect.DeepEqual(x,y)
+	if (x == nil) != (y == nil) {
+		return false
+	}
+
+	return reflect.DeepEqual(x, y)
 }
 `
 
@@ -49,7 +46,6 @@ func EqualGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, equalCtx EqualC
 
 	if equalCtx.EnableCompareInterfaces {
 		equalImplementation = equalInterfaceTemplateTxt
-
 	} else {
 		equalImplementation = ctx.LeftSideComparison + " == " + ctx.RightSideComparison
 	}
