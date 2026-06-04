@@ -97,6 +97,7 @@ Options:
 --header-file=PATH|Optional Go file to prepend as header in generated output  |
 --scan=DIR|	Scan a directory to extract all types (exclusive with type arguments) |
 --field-names-to-skip=NAMES|Comma-separated list of struct field names to exclude from all generated functions (e.g. `--field-names-to-skip=CreatedAt,UpdatedAt`) |
+--process-interface|When set, interface-typed fields are included in generated Equal and Diff functions (using `reflect.DeepEqual` / `go-cmp`). By default interface fields are skipped. |
 
 You must provide fully-qualified type paths (`importpath.TypeName`) if not using scan option.
 

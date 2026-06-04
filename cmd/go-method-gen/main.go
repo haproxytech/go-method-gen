@@ -64,7 +64,7 @@ func main() {
 		OverridesFile: {{printf "%q" .OverridesPath}},
 		HeaderPath: {{printf "%q" .HeaderPath}},
 		FieldNamesToSkip: {{printf "%q" .FieldNamesToSkip}},
-
+		ProcessInterface: {{printf "%t" .ProcessInterface}},
 	})
 	if err != nil {
 		fmt.Println("Generation error:", err)
@@ -84,6 +84,7 @@ type TemplateData struct {
 	OverridesPath    string
 	HeaderPath       string
 	FieldNamesToSkip string
+	ProcessInterface bool
 	// Cwd is injected into the generated main and used for os.Chdir.
 	Cwd string
 }
@@ -113,7 +114,7 @@ func main() {
 	var replaceGoMethodGenPath, overridesPath, headerPath, fieldNamesToSkip string
 	var extraReplaces []string
 	var seenOutputDir, seenKeepTemp, seenDebug,
-		seenHeader, seenReplace, seenOverrides, seenFieldNamesToSkip bool
+		seenHeader, seenReplace, seenOverrides, seenFieldNamesToSkip, seenProcessInterface, processInterface bool
 	var scanPath string
 	var seenScan bool
 	// --- Argument parsing ---
@@ -176,6 +177,15 @@ func main() {
 			}
 			fieldNamesToSkip = strings.TrimPrefix(arg, "--field-names-to-skip=")
 			seenFieldNamesToSkip = true
+		case strings.HasPrefix(arg, "--process-interface"):
+			if seenProcessInterface {
+				exit("Error: --process-interface more than once")
+			}
+			if strings.TrimPrefix(arg, "--process-interface") != "" {
+				exit("Error: --process-interface does not accept parameter")
+			}
+			processInterface = true
+			seenProcessInterface = true
 		case strings.HasPrefix(arg, "--"):
 			exit(fmt.Sprintf("Error: unknown option: %s", arg))
 		default:
@@ -353,6 +363,7 @@ func main() {
 		OverridesPath:    overridesPath,
 		HeaderPath:       headerPath,
 		FieldNamesToSkip: fieldNamesToSkip,
+		ProcessInterface: processInterface,
 		Cwd:              cwd(),
 	}
 	generateMainGo(tmpDir, data, debug)
