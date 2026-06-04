@@ -44,5 +44,6 @@ func DiffGeneratorForNodeWithDiff(node *data.TypeNode, ctx *data.Ctx) bool {
 }
 
 type DiffCtx struct {
-	Overrides map[string]common.OverrideFuncs
+	Overrides               map[string]common.OverrideFuncs
+	EnableCompareInterfaces bool
 }

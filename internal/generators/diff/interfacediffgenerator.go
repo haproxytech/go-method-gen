@@ -15,25 +15,54 @@ package diff
 
 import "github.com/haproxytech/go-method-gen/internal/data"
 
+var diffInterfaceTemplateTxt = `func DiffInterface( x,y interface{}, opts ...eqdiff.GoMethodGenOptions) map[string][]interface{} {
+	var opt *eqdiff.GoMethodGenOptions
+	if len(opts) > 0 {
+		opt = &opts[0]
+	}
+	diffs := map[string][]interface{}{}
+	if opt != nil && !opt.CompareInterfaces {
+		return diffs
+	}
+
+	if x == nil && y == nil {
+		return diffs
+	}
+
+	if x == nil {
+		return map[string][]interface{}{"": {nil, y}}
+	}
+
+	if y == nil {
+		return map[string][]interface{}{"": {x, nil}}
+	}
+
+	diff := cmp.Diff(x, y)
+	if diff != "" {
+		diffs[""] = []interface{}{x, y, diff}
+	}
+	return diffs
+}
+`
+
 func DiffGeneratorInterface(node *data.TypeNode, ctx *data.Ctx, diffCtx DiffCtx) {
 	if node.Kind != data.Interface {
 		// TODO log error
 	}
-
-	var equalImplementation, unequalImplementation string
-	if node.IsForType() {
-		equalImplementation = ctx.LeftSideComparison + " == " + ctx.RightSideComparison
-	} else {
-		equalImplementation = ctx.LeftSideComparison + "." + node.Name + " == " + ctx.RightSideComparison + "." + node.Name
+	if !diffCtx.EnableCompareInterfaces {
+		return
 	}
-	unequalImplementation = "!" + equalImplementation
+	if node.Imports == nil {
+		node.Imports = make(map[string]struct{})
+	}
+	node.Imports["github.com/google/go-cmp/cmp"] = struct{}{}
+
 	ctxDiff := &data.Ctx{
 		ObjectNameToHaveGeneration: node.Name,
-		EqualImplementation:        equalImplementation,
-		InequalImplementation:      unequalImplementation,
 		ObjectKind:                 data.KindToString(node.Kind),
 		Imports:                    node.Imports,
-		Err:                        true,
+		DiffImplementation:         diffInterfaceTemplateTxt,
+		DiffFuncName:               "DiffInterface",
 	}
 	ctx.SubCtxs = append(ctx.SubCtxs, ctxDiff)
 }

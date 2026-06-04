@@ -172,7 +172,8 @@ func Generate(types []reflect.Type, opts Options) error {
 		ctx = &data.Ctx{LeftSideComparison: "rec", RightSideComparison: "obj"}
 		if !root.HasDiff && !root.HasDiffOpts {
 			diff.Generate(root, ctx, diff.DiffCtx{
-				Overrides: overrides,
+				Overrides:               overrides,
+				EnableCompareInterfaces: true,
 			})
 		}
 		if len(ctx.SubCtxs) == 1 {

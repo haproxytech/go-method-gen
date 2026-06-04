@@ -30,12 +30,12 @@ const (
 	EqualityTestDataMap   = "EqualityTest"   // Expression for equality comparison
 	InequalityTestDataMap = "InequalityTest" // Expression for inequality comparison
 
-	DiffFuncNameDataMap   = "DiffFuncName"      // Name of the Diff function
-	DiffElementMap        = "DiffElement"       // Expression for diffing
-	NodeNameMap           = "NodeName"          // Field name
-	IsBuiltinSubNodeMap   = "IsBuiltinSubNode"  // Indicates if sub-node is a builtin type
-	SubTypeMap            = "SubType"           // Type of sub-node
-	InnerDiffFuncNameMap  = "InnerDiffFuncName" // DiffFuncName of the inner sub-context (standalone helper, not method)
+	DiffFuncNameDataMap  = "DiffFuncName"      // Name of the Diff function
+	DiffElementMap       = "DiffElement"       // Expression for diffing
+	NodeNameMap          = "NodeName"          // Field name
+	IsBuiltinSubNodeMap  = "IsBuiltinSubNode"  // Indicates if sub-node is a builtin type
+	SubTypeMap           = "SubType"           // Type of sub-node
+	InnerDiffFuncNameMap = "InnerDiffFuncName" // DiffFuncName of the inner sub-context (standalone helper, not method)
 )
 
 // Kind represents the kind of a type node (builtin, struct, array, slice, map, etc.)
@@ -108,7 +108,6 @@ type Ctx struct {
 	DiffImplementation                      string
 	EqualFuncName                           string
 	DiffFuncName                            string
-	DiffElement                             string
 	ObjectKind                              string
 	SubNodeKind                             string
 	Type                                    string
@@ -264,13 +263,13 @@ func GetTemplateDataFromSubNodeDiff(node *TypeNode, ctx *Ctx) map[string]string 
 	}
 	diffFuncName := utils.DiffFuncName(parameterType)
 	return map[string]string{
-		ParameterTypeDataMap:  parameterType,
-		DiffFuncNameDataMap:   diffFuncName,
-		DiffElementMap:        subValueDiff,
-		NodeNameMap:           node.Name,
-		IsBuiltinSubNodeMap:   isBuiltinSubNodeMap,
-		SubTypeMap:            subType,
-		InnerDiffFuncNameMap:  innerDiffFuncName,
+		ParameterTypeDataMap: parameterType,
+		DiffFuncNameDataMap:  diffFuncName,
+		DiffElementMap:       subValueDiff,
+		NodeNameMap:          node.Name,
+		IsBuiltinSubNodeMap:  isBuiltinSubNodeMap,
+		SubTypeMap:           subType,
+		InnerDiffFuncNameMap: innerDiffFuncName,
 	}
 }
 
