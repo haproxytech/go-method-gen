@@ -96,6 +96,7 @@ Options:
 --overrides=FILE.yaml|YAML file to override diff/equal logic for specific fields  |
 --header-file=PATH|Optional Go file to prepend as header in generated output  |
 --scan=DIR|	Scan a directory to extract all types (exclusive with type arguments) |
+--field-names-to-skip=NAMES|Comma-separated list of struct field names to exclude from all generated functions (e.g. `--field-names-to-skip=CreatedAt,UpdatedAt`) |
 
 You must provide fully-qualified type paths (`importpath.TypeName`) if not using scan option.
 

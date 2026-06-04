@@ -61,21 +61,21 @@ func TypeAlreadyVisited(typ reflect.Type, fqnTypesProcessed map[string]struct{})
 // typ: the reflect.Type being parsed
 // pkg: the package of the parent referer
 // fqnTypesProcessed: map to track already parsed types (avoiding recursion loops)
-func Parse(node *data.TypeNode, typ reflect.Type, pkg string, fqnTypesProcessed map[string]struct{}) {
+func Parse(node *data.TypeNode, typ reflect.Type, pkg string, fqnTypesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	kind := typ.Kind()
 	switch kind {
 	case reflect.Array:
-		ParseArray(node, typ, pkg, fqnTypesProcessed)
+		ParseArray(node, typ, pkg, fqnTypesProcessed, fieldNamesToSkip)
 	case reflect.Slice:
-		ParseSlice(node, typ, pkg, fqnTypesProcessed)
+		ParseSlice(node, typ, pkg, fqnTypesProcessed, fieldNamesToSkip)
 	case reflect.Ptr:
-		ParsePointer(node, typ, pkg, fqnTypesProcessed)
+		ParsePointer(node, typ, pkg, fqnTypesProcessed, fieldNamesToSkip)
 	case reflect.Struct:
-		ParseStructure(node, typ, pkg, fqnTypesProcessed)
+		ParseStructure(node, typ, pkg, fqnTypesProcessed, fieldNamesToSkip)
 	case reflect.Map:
-		ParseMap(node, typ, pkg, fqnTypesProcessed)
+		ParseMap(node, typ, pkg, fqnTypesProcessed, fieldNamesToSkip)
 	case reflect.Interface:
-		ParseInterface(node, typ, pkg, fqnTypesProcessed)
+		ParseInterface(node, typ, pkg, fqnTypesProcessed, fieldNamesToSkip)
 	case reflect.Func:
 		ParseFunc(node, typ, pkg)
 	}
@@ -97,7 +97,7 @@ func ParseBuiltin(node *data.TypeNode, pkg string, typ reflect.Type) {
 
 // ParseInterface handles interface types.
 // It marks the node as an interface, sets SamePkgAsReferer.
-func ParseInterface(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+func ParseInterface(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Interface
 	node.SamePkgAsReferer = pkg == node.PkgPath
@@ -113,7 +113,7 @@ func ParseInterface(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 //     to generate equality logic.
 //   - Finally, Err is set to true only if the struct has no custom Equal method
 //     and all its fields also have Err set to true.
-func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Struct
 	node.SamePkgAsReferer = pkg == node.PkgPath
@@ -130,7 +130,7 @@ func ParseStructure(node *data.TypeNode, typ reflect.Type, pkg string, typesProc
 	}
 	// Only parse fields if the struct has no custom Equal method
 	if !node.HasEqual {
-		StructFieldsEqual(node, typ, pkg, typesProcessed)
+		ParseStructFields(node, typ, pkg, typesProcessed, fieldNamesToSkip)
 	}
 	// Err will be true only if all fields have Err set to true
 	node.Err = !node.HasEqual
@@ -149,7 +149,7 @@ func ParseFunc(node *data.TypeNode, typ reflect.Type, pkg string) {
 
 // ParseMap handles map types.
 // It parses both the key type and value type recursively and merges their imports.
-func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Map
 	node.MapKeyType = typ.Key().Name()
@@ -159,7 +159,7 @@ func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed 
 		UpNode: node,
 	}
 	node.SubNode = mapNode
-	Parse(mapNode, mapType, pkg, typesProcessed)
+	Parse(mapNode, mapType, pkg, typesProcessed, fieldNamesToSkip)
 	// Update PkgPath depending on whether the type is named or anonymous
 	node.PkgPath = typ.Key().PkgPath()
 	if node.Type != "" {
@@ -180,7 +180,7 @@ func ParseMap(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed 
 
 // ParseArray handles fixed-length array types.
 // It parses the element type recursively.
-func ParseArray(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+func ParseArray(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Array
 	node.Len = typ.Len()
@@ -189,7 +189,7 @@ func ParseArray(node *data.TypeNode, typ reflect.Type, pkg string, typesProcesse
 		UpNode: node,
 	}
 	node.SubNode = arrayNode
-	Parse(arrayNode, arrayType, pkg, typesProcessed)
+	Parse(arrayNode, arrayType, pkg, typesProcessed, fieldNamesToSkip)
 	// Propagate PkgPath and imports from the element type
 	node.PkgPath = node.SubNode.PkgPath
 	if node.Type != "" {
@@ -201,7 +201,7 @@ func ParseArray(node *data.TypeNode, typ reflect.Type, pkg string, typesProcesse
 
 // ParseSlice handles slice types.
 // It parses the element type recursively and tracks whether it's in the same package.
-func ParseSlice(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+func ParseSlice(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Slice
 	sliceType := typ.Elem()
@@ -215,7 +215,7 @@ func ParseSlice(node *data.TypeNode, typ reflect.Type, pkg string, typesProcesse
 		pkg = node.PkgPath
 		node.SamePkgAsReferer = true
 	}
-	Parse(sliceNode, sliceType, pkg, typesProcessed)
+	Parse(sliceNode, sliceType, pkg, typesProcessed, fieldNamesToSkip)
 	// If package path not yet set, inherit from element type
 	if node.PkgPath == "" {
 		node.PkgPath = node.SubNode.PkgPath
@@ -226,7 +226,7 @@ func ParseSlice(node *data.TypeNode, typ reflect.Type, pkg string, typesProcesse
 
 // ParsePointer handles pointer types.
 // It parses the pointed-to type recursively and inherits its packaged type and imports.
-func ParsePointer(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+func ParsePointer(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	DefaultParsing(node, typ)
 	node.Kind = data.Pointer
 	pointerType := typ.Elem()
@@ -234,7 +234,7 @@ func ParsePointer(node *data.TypeNode, typ reflect.Type, pkg string, typesProces
 		UpNode: node,
 	}
 	node.SubNode = pointerNode
-	Parse(pointerNode, pointerType, pkg, typesProcessed)
+	Parse(pointerNode, pointerType, pkg, typesProcessed, fieldNamesToSkip)
 	if node.Type == "" {
 		node.PkgPath = node.SubNode.PkgPath
 	}
@@ -243,14 +243,18 @@ func ParsePointer(node *data.TypeNode, typ reflect.Type, pkg string, typesProces
 	node.Err = pointerNode.Err
 }
 
-// StructFieldsEqual parses the fields of a struct for equality/diff generation.
+// ParseStructFields parses the fields of a struct for equality/diff generation.
 // It skips certain predefined meta types and parses each remaining field recursively.
-func StructFieldsEqual(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}) {
+func ParseStructFields(node *data.TypeNode, typ reflect.Type, pkg string, typesProcessed map[string]struct{}, fieldNamesToSkip map[string]struct{}) {
 	for i := 0; i < typ.NumField(); i++ {
 		fieldType := typ.Field(i)
 		// Skip predefined meta types (e.g., Kubernetes ObjectMeta)
-		_, toSkip := typesToSkip[fieldType.Type.String()]
-		if toSkip {
+		_, typeToSkip := typesToSkip[fieldType.Type.String()]
+		if typeToSkip {
+			continue
+		}
+		_, fieldToSkip := fieldNamesToSkip[fieldType.Name]
+		if fieldToSkip {
 			continue
 		}
 		equalNode := &data.TypeNode{
@@ -258,7 +262,7 @@ func StructFieldsEqual(node *data.TypeNode, typ reflect.Type, pkg string, typesP
 			UpNode: node,
 		}
 		node.Fields = append(node.Fields, equalNode)
-		Parse(equalNode, fieldType.Type, pkg, typesProcessed)
+		Parse(equalNode, fieldType.Type, pkg, typesProcessed, fieldNamesToSkip)
 	}
 }
 

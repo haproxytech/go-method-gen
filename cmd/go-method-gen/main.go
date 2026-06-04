@@ -63,6 +63,8 @@ func main() {
 		OutputDir: {{printf "%q" .OutputDir}},
 		OverridesFile: {{printf "%q" .OverridesPath}},
 		HeaderPath: {{printf "%q" .HeaderPath}},
+		FieldNamesToSkip: {{printf "%q" .FieldNamesToSkip}},
+
 	})
 	if err != nil {
 		fmt.Println("Generation error:", err)
@@ -78,9 +80,10 @@ type TemplateData struct {
 	// TypeSpecs contains all the types that will be fed to eqdiff.Generate.
 	TypeSpecs map[string]TypeSpec
 	// Paths/flags for the generator.
-	OutputDir     string
-	OverridesPath string
-	HeaderPath    string
+	OutputDir        string
+	OverridesPath    string
+	HeaderPath       string
+	FieldNamesToSkip string
 	// Cwd is injected into the generated main and used for os.Chdir.
 	Cwd string
 }
@@ -107,10 +110,10 @@ func main() {
 	outputDir := "./generated"
 	var typeArgs []string
 	var keepTemp, debug bool
-	var replaceGoMethodGenPath, overridesPath, headerPath string
+	var replaceGoMethodGenPath, overridesPath, headerPath, fieldNamesToSkip string
 	var extraReplaces []string
 	var seenOutputDir, seenKeepTemp, seenDebug,
-		seenHeader, seenReplace, seenOverrides bool
+		seenHeader, seenReplace, seenOverrides, seenFieldNamesToSkip bool
 	var scanPath string
 	var seenScan bool
 	// --- Argument parsing ---
@@ -167,9 +170,14 @@ func main() {
 			}
 			headerPath = strings.TrimPrefix(arg, "--header-file=")
 			seenHeader = true
+		case strings.HasPrefix(arg, "--field-names-to-skip="):
+			if seenFieldNamesToSkip {
+				exit("Error: --field-names-to-skip more than once")
+			}
+			fieldNamesToSkip = strings.TrimPrefix(arg, "--field-names-to-skip=")
+			seenFieldNamesToSkip = true
 		case strings.HasPrefix(arg, "--"):
 			exit(fmt.Sprintf("Error: unknown option: %s", arg))
-
 		default:
 			// Positional args are treated as fully-qualified type identifiers:
 			// "<import.path>.Type[@version]"
@@ -192,9 +200,10 @@ func main() {
 		fmt.Printf("  - outputDir: %s\n", outputDir)
 		fmt.Printf("  - keepTemp: %v\n", keepTemp)
 		fmt.Printf("  - typeArgs: %v\n", typeArgs)
-		fmt.Printf("  - replaceEqdiffPath: %s\n", replaceGoMethodGenPath)
+		fmt.Printf("  - replaceGoMethodGenPath: %s\n", replaceGoMethodGenPath)
 		fmt.Printf("  - overridesPath: %s\n", overridesPath)
 		fmt.Printf("  - extraReplaces: %v\n", extraReplaces)
+		fmt.Printf("  - fieldNamesToSkip: %v\n", fieldNamesToSkip)
 	}
 	// --- Resolve module context for --scan (or fall back to current module) ---
 	var moduleName, absScanPath, modRoot, relPath string
@@ -338,12 +347,13 @@ func main() {
 	}
 	// --- Render the generated main.go into tmpDir ---
 	data := TemplateData{
-		Imports:       imports,
-		TypeSpecs:     typeSpecs,
-		OutputDir:     absOutputDir,
-		OverridesPath: overridesPath,
-		HeaderPath:    headerPath,
-		Cwd:           cwd(),
+		Imports:          imports,
+		TypeSpecs:        typeSpecs,
+		OutputDir:        absOutputDir,
+		OverridesPath:    overridesPath,
+		HeaderPath:       headerPath,
+		FieldNamesToSkip: fieldNamesToSkip,
+		Cwd:              cwd(),
 	}
 	generateMainGo(tmpDir, data, debug)
 	// --- Fetch deps into the temp module and tidy ---
