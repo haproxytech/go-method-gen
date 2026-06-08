@@ -109,14 +109,19 @@ type TypeSpec struct {
 func main() {
 	// Defaults & holders for parsed flags.
 	outputDir := "./generated"
-	var typeArgs []string
-	var keepTemp, debug bool
-	var replaceGoMethodGenPath, overridesPath, headerPath, fieldNamesToSkip string
-	var extraReplaces []string
-	var seenOutputDir, seenKeepTemp, seenDebug,
-		seenHeader, seenReplace, seenOverrides, seenFieldNamesToSkip, seenProcessInterface, processInterface bool
-	var scanPath string
-	var seenScan bool
+	var (
+		typeArgs                                                            []string
+		keepTemp, debug                                                     bool
+		replaceGoMethodGenPath, overridesPath, headerPath, fieldNamesToSkip string
+		extraReplaces                                                       []string
+		seenOutputDir, seenKeepTemp,
+		seenDebug, seenHeader, seenReplace,
+		seenOverrides, seenFieldNamesToSkip,
+		seenGoMethodGenVersion,
+		seenProcessInterface, processInterface bool
+		scanPath, goMethodGenVersion string
+		seenScan                     bool
+	)
 	// --- Argument parsing ---
 	// We accept either explicit types as CLI args or a --scan=<path> to discover them.
 	for _, arg := range os.Args[1:] {
@@ -186,6 +191,12 @@ func main() {
 			}
 			processInterface = true
 			seenProcessInterface = true
+		case strings.HasPrefix(arg, "--go-method-gen-version="):
+			if seenGoMethodGenVersion {
+				exit("Error: --go-method-gen-version more than once")
+			}
+			goMethodGenVersion = strings.TrimPrefix(arg, "--go-method-gen-version=")
+			seenGoMethodGenVersion = true
 		case strings.HasPrefix(arg, "--"):
 			exit(fmt.Sprintf("Error: unknown option: %s", arg))
 		default:
@@ -214,6 +225,7 @@ func main() {
 		fmt.Printf("  - overridesPath: %s\n", overridesPath)
 		fmt.Printf("  - extraReplaces: %v\n", extraReplaces)
 		fmt.Printf("  - fieldNamesToSkip: %v\n", fieldNamesToSkip)
+		fmt.Printf("  - goMethodGenVersion: '%v'\n", goMethodGenVersion)
 	}
 	// --- Resolve module context for --scan (or fall back to current module) ---
 	var moduleName, absScanPath, modRoot, relPath string
@@ -368,7 +380,7 @@ func main() {
 	}
 	generateMainGo(tmpDir, data, debug)
 	// --- Fetch deps into the temp module and tidy ---
-	addGoGetDeps(tmpDir, importsWithVersion, debug)
+	addGoGetDeps(tmpDir, goMethodGenVersion, importsWithVersion, debug)
 
 	// --- Run the ephemeral generator (go run . in tmpDir) ---
 	cmd := exec.Command("go", "run", ".")
@@ -427,7 +439,7 @@ func generateGoModWithReplaces(tmpDir, replaceEqdiffPath string, extraReplaces [
 // addGoGetDeps runs 'go get' for all imports we collected (possibly with versions),
 // ensures eqdiff runtime dependency is present, and finally runs 'go mod tidy'.
 // This warms the temp module with everything the generated main.go will need.
-func addGoGetDeps(tmpDir string, importsWithVersion []string, debug bool) {
+func addGoGetDeps(tmpDir, goMethodGenVersion string, importsWithVersion []string, debug bool) {
 	for _, pkg := range importsWithVersion {
 		cmd := exec.Command("go", "get", pkg)
 		cmd.Dir = tmpDir
@@ -438,13 +450,17 @@ func addGoGetDeps(tmpDir string, importsWithVersion []string, debug bool) {
 		}
 		check(cmd.Run())
 	}
+	goMethodGenPkg := "github.com/haproxytech/go-method-gen/pkg/eqdiff"
+	if goMethodGenVersion != "" {
+		goMethodGenPkg += "@" + goMethodGenVersion
+	}
 
-	cmd := exec.Command("go", "get", "github.com/haproxytech/go-method-gen/pkg/eqdiff")
+	cmd := exec.Command("go", "get", goMethodGenPkg)
 	cmd.Dir = tmpDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if debug {
-		fmt.Println("\u2022 Running: go get github.com/haproxytech/go-method-gen/pkg/eqdiff")
+		fmt.Printf("\u2022 Running: go get %s\n", goMethodGenPkg)
 	}
 	check(cmd.Run())
 
