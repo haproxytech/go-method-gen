@@ -98,6 +98,7 @@ Options:
 --scan=DIR|	Scan a directory to extract all types (exclusive with type arguments) |
 --field-names-to-skip=NAMES|Comma-separated list of struct field names to exclude from all generated functions (e.g. `--field-names-to-skip=CreatedAt,UpdatedAt`) |
 --process-interface|When set, interface-typed fields are included in generated Equal and Diff functions (using `reflect.DeepEqual` / `go-cmp`). By default interface fields are skipped. |
+--go-method-gen-version=VERSION|Pin the `go-method-gen` library used inside the ephemeral generator module to a specific version (e.g. `--go-method-gen-version=v0.1.1`). By default the latest available version is resolved. Useful when the scanned module transitively depends on a newer version and you need to lock generation to a known-good release. Note: if the scanned module's own `go.mod` requires a higher version, `go mod tidy` may override this pin — in that case the effective version will be the minimum required by the dependency graph. |
 
 You must provide fully-qualified type paths (`importpath.TypeName`) if not using scan option.
 
