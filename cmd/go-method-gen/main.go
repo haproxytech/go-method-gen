@@ -450,7 +450,8 @@ func addGoGetDeps(tmpDir, goMethodGenVersion string, importsWithVersion []string
 		}
 		check(cmd.Run())
 	}
-	goMethodGenPkg := "github.com/haproxytech/go-method-gen/pkg/eqdiff"
+
+	goMethodGenPkg := "github.com/haproxytech/go-method-gen"
 	if goMethodGenVersion != "" {
 		goMethodGenPkg += "@" + goMethodGenVersion
 	}
